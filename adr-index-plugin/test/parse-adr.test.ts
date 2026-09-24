@@ -69,6 +69,21 @@ test("long summaries are truncated", () => {
   assert.ok(e.summary.endsWith("…"));
 });
 
+test("editorial blockquotes under the title are not the summary", () => {
+  const e = parse(
+    "0015-entry-point.md",
+    "---\nstatus: accepted\n---\n\n# Entry point\n\n> **Annotation — 2026-09-23:** the loader now reads\n> `mesaRuntime` instead.\n\n> **Confirmed 2026-09-20 by #32.** Still holds.\n\nA Game's entry point is `index.ts` exporting `game`.\n",
+  );
+  assert.equal(e.summary, "A Game's entry point is index.ts exporting game.");
+});
+
+test("a lone blockquote is used only when nothing else gives a summary", () => {
+  const withDecision = parse("0002-x.md", "# X\n\n> **Superseded by ADR-0005.** Kept for history.\n\n## Decision\n\nUse Y.\n");
+  assert.equal(withDecision.summary, "Use Y.");
+  const quoteOnly = parse("0003-x.md", "# X\n\n> **Superseded by ADR-0005.** Kept for history.\n");
+  assert.equal(quoteOnly.summary, "Superseded by ADR-0005. Kept for history.");
+});
+
 test("buildIndex keeps stale entry when a file becomes unparseable", () => {
   const dir = join(mkdtempSync(join(tmpdir(), "adr-")), "docs", "adr");
   mkdirSync(dir, { recursive: true });

@@ -64,7 +64,11 @@ export function parseAdr(file: string, content: string): ParseResult {
 
   let summary = asString(fm["summary"]) ?? extractInlineField(body, "summary") ?? extractLeadParagraph(body);
   if (!summary) {
-    summary = extractSection(body, "decision") ?? extractSection(body, "context") ?? "";
+    summary =
+      extractSection(body, "decision") ??
+      extractSection(body, "context") ??
+      extractLeadParagraph(body, { allowQuotes: true }) ??
+      "";
     if (!summary) warnings.push(`${file}: no summary could be extracted`);
   }
 
@@ -169,8 +173,13 @@ function extractInlineField(body: string, name: string): string | undefined {
   return m?.[1] ? m[1].replace(/(\*\*|__)$/, "").trim() || undefined : undefined;
 }
 
-/** First prose paragraph after the H1, skipping inline metadata lines. */
-function extractLeadParagraph(body: string): string | undefined {
+/**
+ * First prose paragraph after the H1, skipping inline metadata lines. Blockquotes
+ * are skipped too unless `allowQuotes`: a quote under the title is an editorial
+ * note added later (`> **Annotation — 2026-09-23:** …`, `> **Superseded by …**`),
+ * not the decision.
+ */
+function extractLeadParagraph(body: string, { allowQuotes = false } = {}): string | undefined {
   const h1 = /^#[ \t]+.+$/m.exec(body);
   let rest = h1 ? body.slice(h1.index + h1[0].length) : body;
   const nextHeading = rest.search(/^#{1,6}[ \t]/m);
@@ -178,13 +187,15 @@ function extractLeadParagraph(body: string): string | undefined {
   const lines = rest
     .split("\n")
     .filter((l) => !/^[ \t]*(?:[-*][ \t]+)?(?:\*\*|__)?(status|date|deciders|tags|summary)(?:\*\*|__)?[ \t]*:/i.test(l));
-  return firstParagraph(lines.join("\n"));
+  return firstParagraph(lines.join("\n"), { allowQuotes });
 }
 
-function firstParagraph(text: string): string | undefined {
+function firstParagraph(text: string, { allowQuotes = true } = {}): string | undefined {
   for (const block of text.split(/\n[ \t]*\n/)) {
     const t = block.trim();
-    if (t && !t.startsWith("<!--")) return t;
+    if (!t || t.startsWith("<!--")) continue;
+    if (!allowQuotes && t.startsWith(">")) continue;
+    return t;
   }
   return undefined;
 }

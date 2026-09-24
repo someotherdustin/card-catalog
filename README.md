@@ -95,11 +95,16 @@ To index ADRs that existed before the plugin was installed, or to repair an inde
 
 ### Parsing rules (lenient)
 
+A blockquote right under the title is treated as an editorial note added
+later (`> **Annotation — 2026-09-23:** …`, `> **Confirmed …**`,
+`> **Superseded by ADR-0005.** …`), so it's used as the summary only when
+nothing else is available.
+
 | Field   | Tried in order |
 |---------|----------------|
 | title   | `title` frontmatter → first `# ` heading (strips `1. ` / `ADR-0001:` prefixes) |
 | status  | `status` frontmatter → `## Status` section → `Status:` line → `unspecified` |
-| summary | `summary` frontmatter → `Summary:` line → first paragraph under the H1 → `## Decision` → `## Context` (capped at 280 chars) |
+| summary | `summary` frontmatter → `Summary:` line → first non-blockquote paragraph under the H1 → `## Decision` → `## Context` → a blockquote under the H1 (capped at 280 chars) |
 | date, tags | frontmatter or `Date:` line |
 
 ## Findings from mattpocock/skills (the brief's open items)
