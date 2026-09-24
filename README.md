@@ -58,12 +58,17 @@ to the repo. A repo with no ADRs gets no output.
 
 `INDEX.md` is what agents read. One line per ADR means a grep hit returns
 the whole record, where a multi-line format would return a fragment with no
-ADR attached to it:
+ADR attached to it. Each ID links to its file, which gives agents the path
+and lets people click through on GitHub:
 
 ```
-- ADR-0003 [superseded by ADR-0009] 2026-04-01 | REST over GraphQL | We picked REST because ...
-- ADR-0009 [accepted] 2026-04-01 | GraphQL gateway for mobile | ...
+- [ADR-0003](0003-rest-over-graphql.md) [superseded by ADR-0009] 2026-04-01 | REST over GraphQL | We picked REST because ...
+- [ADR-0009](0009-graphql-gateway.md) [accepted] 2026-04-01 | GraphQL gateway for mobile | ...
 ```
+
+It's a flat list in number order. A curated, human-facing overview (grouped
+by topic, say) is left to the repo's own `docs/adr/README.md`; the plugin
+doesn't generate or check one.
 
 `index.json` is the plugin's own state: the same fields plus a content hash
 and amendment time per ADR. Agents aren't pointed at it. It's written one ADR

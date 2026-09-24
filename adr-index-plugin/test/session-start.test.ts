@@ -44,10 +44,10 @@ test("INDEX.md has one grep-able line per ADR, with status, supersession and ser
   ]);
   const lines = text.split("\n").filter((l) => l.startsWith("- "));
   assert.deepEqual(lines, [
-    "- ADR-0001 [superseded by ADR-0002] 2026-09-20 | Decision 1 | Summary 1.",
-    "- ADR-0002 [accepted] 2026-09-20 | Decision 2 | Summary 2.",
-    "- hub-0031 [superseded by hub-0042] 2026-09-20 | Decision 31 | Summary 31.",
-    "- hub-0029 [superseded by ADR-0004] 2026-09-20 | Decision 29 | Summary 29.",
+    "- [ADR-0001](0001-adr-1.md) [superseded by ADR-0002] 2026-09-20 | Decision 1 | Summary 1.",
+    "- [ADR-0002](0002-adr-2.md) [accepted] 2026-09-20 | Decision 2 | Summary 2.",
+    "- [hub-0031](hub-0031-x.md) [superseded by hub-0042] 2026-09-20 | Decision 31 | Summary 31.",
+    "- [hub-0029](hub-0029-x.md) [superseded by ADR-0004] 2026-09-20 | Decision 29 | Summary 29.",
   ]);
 });
 
@@ -85,6 +85,6 @@ test("refreshIndex writes both files, one ADR per line, and is idempotent", () =
   const json = readFileSync(join(dir, "index.json"), "utf8");
   assert.equal(json.split("\n").filter((l) => l.startsWith('{"id"')).length, 2);
   assert.equal((JSON.parse(json) as { adrs: unknown[] }).adrs.length, 2);
-  assert.match(readFileSync(join(dir, "INDEX.md"), "utf8"), /^- ADR-0002 \[unspecified\] \d{4}-\d{2}-\d{2} \| Second \| More\.$/m);
+  assert.match(readFileSync(join(dir, "INDEX.md"), "utf8"), /^- \[ADR-0002\]\(0002-second\.md\) \[unspecified\] \d{4}-\d{2}-\d{2} \| Second \| More\.$/m);
   assert.equal(refreshIndex(dir).changed, false);
 });

@@ -1,7 +1,7 @@
 // Renders <adr-dir>/INDEX.md: one line per ADR, for agents to grep.
 //
 // One line per record is the point. A grep hit on a keyword returns the whole
-// record (ID, status, title, summary), where a multi-line format would return
+// record (ID linked to its file, status, title, summary), where a multi-line format would return
 // a fragment with no ADR attached to it.
 
 import type { IndexedAdr } from "./index-store.ts";
@@ -16,7 +16,7 @@ export function renderIndexMd(adrs: IndexedAdr[]): string {
     "One line per ADR: `ID [status] amended | title | summary`. Search it with grep, then open the ADRs that match.",
     "",
     ...adrs.map(
-      (adr) => `- ${ref(adr.id, adr.prefix)} [${status(adr)}] ${adr.amendedAt.slice(0, 10)} | ${adr.title} | ${adr.summary}`,
+      (adr) => `- [${ref(adr.id, adr.prefix)}](${adr.file}) [${status(adr)}] ${adr.amendedAt.slice(0, 10)} | ${adr.title} | ${adr.summary}`,
     ),
   ];
   return lines.join("\n") + "\n";
