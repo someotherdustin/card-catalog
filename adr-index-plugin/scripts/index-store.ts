@@ -38,11 +38,15 @@ export function adrDirForFile(filePath: string): string | undefined {
 
 export function readIndex(adrDir: string): AdrIndex | undefined {
   try {
-    const parsed = JSON.parse(readFileSync(join(adrDir, INDEX_FILE), "utf8"));
-    return Array.isArray(parsed?.adrs) ? parsed : undefined;
+    const parsed: unknown = JSON.parse(readFileSync(join(adrDir, INDEX_FILE), "utf8"));
+    return isAdrIndex(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
+}
+
+function isAdrIndex(value: unknown): value is AdrIndex {
+  return typeof value === "object" && value !== null && Array.isArray((value as { adrs?: unknown }).adrs);
 }
 
 export function buildIndex(adrDir: string): BuildResult {
@@ -56,7 +60,7 @@ export function buildIndex(adrDir: string): BuildResult {
     try {
       content = readFileSync(join(adrDir, file), "utf8");
     } catch (err) {
-      warnings.push(`${file}: unreadable (${(err as Error).message})`);
+      warnings.push(`${file}: unreadable (${err instanceof Error ? err.message : String(err)})`);
       continue;
     }
     const result = parseAdr(file, content);
@@ -79,7 +83,7 @@ export function buildIndex(adrDir: string): BuildResult {
 
 export function writeIndex(adrDir: string, index: AdrIndex): void {
   const target = join(adrDir, INDEX_FILE);
-  const tmp = `${target}.${process.pid}.tmp`;
+  const tmp = `${target}.${String(process.pid)}.tmp`;
   writeFileSync(tmp, JSON.stringify(index, null, 2) + "\n");
   renameSync(tmp, target); // atomic on the same filesystem
 }

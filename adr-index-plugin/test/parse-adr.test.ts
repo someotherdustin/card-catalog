@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseAdr } from "../scripts/parse-adr.ts";
-import { buildIndex } from "../scripts/index-store.ts";
+import { type AdrIndex, buildIndex } from "../scripts/index-store.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -76,8 +76,8 @@ test("buildIndex keeps stale entry when a file becomes unparseable", () => {
   writeFileSync(join(dir, "index.json"), JSON.stringify(buildIndex(dir).index));
   writeFileSync(join(dir, "0001-a.md"), "garbage without heading");
   const { index, warnings } = buildIndex(dir);
-  assert.equal(index.adrs[0].title, "A");
-  assert.match(warnings[0], /kept previous/);
+  assert.equal(index.adrs[0]?.title, "A");
+  assert.match(warnings[0] ?? "", /kept previous/);
 });
 
 test("on-write hook indexes an ADR end-to-end and ignores other files", () => {
@@ -94,8 +94,8 @@ test("on-write hook indexes an ADR end-to-end and ignores other files", () => {
   assert.throws(() => readFileSync(join(dir, "index.json")));
 
   run("docs/adr/0001-a.md");
-  const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8"));
-  assert.deepEqual(index.adrs.map((a: { title: string }) => a.title), ["A"]);
+  const index = JSON.parse(readFileSync(join(dir, "index.json"), "utf8")) as AdrIndex;
+  assert.deepEqual(index.adrs.map((a) => a.title), ["A"]);
 });
 
 test("on-write hook exits 0 on malformed stdin", () => {

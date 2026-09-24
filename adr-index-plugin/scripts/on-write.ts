@@ -30,11 +30,13 @@ async function main(): Promise<void> {
 
   const { changed, count, warnings } = refreshIndex(adrDir);
   for (const w of warnings) console.error(`[adr-index] warning: ${w}`);
-  if (changed) console.error(`[adr-index] indexed ${count} ADR(s) in ${adrDir}`);
+  if (changed) console.error(`[adr-index] indexed ${String(count)} ADR(s) in ${adrDir}`);
 }
 
-main().catch((err) => {
-  console.error(`[adr-index] skipped: ${(err as Error).message}`);
-}).finally(() => {
-  process.exitCode = 0;
-});
+main()
+  .catch((err: unknown) => {
+    console.error(`[adr-index] skipped: ${err instanceof Error ? err.message : String(err)}`);
+  })
+  .finally(() => {
+    process.exitCode = 0;
+  });
