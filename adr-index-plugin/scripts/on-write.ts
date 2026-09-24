@@ -1,5 +1,5 @@
 // PostToolUse hook for Write|Edit|MultiEdit. If the touched file is an ADR,
-// rebuild that directory's index.json.
+// rebuild that directory's index.json and INDEX.md.
 //
 // Never blocks: every path exits 0. Problems go to stderr, which Claude Code
 // only surfaces in verbose mode, so the grilling session that wrote the ADR

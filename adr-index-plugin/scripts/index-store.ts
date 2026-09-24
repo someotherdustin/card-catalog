@@ -1,4 +1,6 @@
-// Builds and writes <adr-dir>/index.json. The whole directory is re-read on
+// Builds and writes <adr-dir>/index.json and INDEX.md. index.json is the
+// plugin's own state (content hashes and amendment times); INDEX.md is what
+// agents read. The whole directory is re-read on
 // every run: ADR collections are tens to low hundreds of small files, so a
 // full rebuild is cheap and can't drift the way incremental upserts can
 // (renames, deletions, edits made outside the agent).
@@ -6,6 +8,7 @@
 import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
 import { contentHash, lastCommitDates, resolveAmendedAt } from "./amendments.ts";
+import { INDEX_MD_FILE, renderIndexMd } from "./index-md.ts";
 import { type AdrEntry, isAdrFilename, parseAdr } from "./parse-adr.ts";
 
 export const INDEX_FILE = "index.json";
@@ -30,7 +33,6 @@ type StoredAdr = AdrEntry & Partial<Pick<IndexedAdr, "contentHash" | "amendedAt"
 export interface BuildResult {
   index: AdrIndex;
   warnings: string[];
-  changed: boolean;
 }
 
 /**
@@ -97,21 +99,55 @@ export function buildIndex(adrDir: string, now: Date = new Date()): BuildResult 
   // Unprefixed ADRs first, then each prefixed series, each in number order.
   adrs.sort((a, b) => (a.prefix ?? "").localeCompare(b.prefix ?? "") || a.id - b.id || a.file.localeCompare(b.file));
   const index: AdrIndex = { version: INDEX_VERSION, generatedBy: "adr-index", adrs };
-  const changed = JSON.stringify(previous) !== JSON.stringify(index);
-  return { index, warnings, changed };
+  return { index, warnings };
 }
 
-export function writeIndex(adrDir: string, index: AdrIndex): void {
-  const target = join(adrDir, INDEX_FILE);
-  const tmp = `${target}.${String(process.pid)}.tmp`;
-  writeFileSync(tmp, JSON.stringify(index, null, 2) + "\n");
-  renameSync(tmp, target); // atomic on the same filesystem
+/** File contents for an index: `[file, text]` pairs, relative to the ADR directory. */
+export function renderIndexFiles(index: AdrIndex): [string, string][] {
+  // One ADR per line keeps git diffs readable; nobody needs index.json indented.
+  const json = [
+    `{"version":${String(index.version)},"generatedBy":${JSON.stringify(index.generatedBy)},"adrs":[`,
+    index.adrs.map((a) => JSON.stringify(a)).join(",\n"),
+    "]}",
+    "",
+  ].join("\n");
+  return [
+    [INDEX_FILE, json],
+    [INDEX_MD_FILE, renderIndexMd(index.adrs)],
+  ];
+}
+
+/** Writes both index files, each only if its content differs. Returns whether any changed. */
+export function writeIndex(adrDir: string, index: AdrIndex): boolean {
+  let changed = false;
+  for (const [file, text] of renderIndexFiles(index)) {
+    const target = join(adrDir, file);
+    if (readText(target) === text) continue;
+    const tmp = `${target}.${String(process.pid)}.tmp`;
+    writeFileSync(tmp, text);
+    renameSync(tmp, target); // atomic on the same filesystem
+    changed = true;
+  }
+  return changed;
+}
+
+/** Whether the index files on disk match what a rebuild would write. */
+export function indexIsCurrent(adrDir: string, index: AdrIndex): boolean {
+  return renderIndexFiles(index).every(([file, text]) => readText(join(adrDir, file)) === text);
+}
+
+function readText(path: string): string | undefined {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return undefined;
+  }
 }
 
 /** Rebuild and write if anything changed. Returns warnings for logging. */
 export function refreshIndex(adrDir: string): { changed: boolean; count: number; warnings: string[] } {
-  const { index, warnings, changed } = buildIndex(adrDir);
-  if (changed) writeIndex(adrDir, index);
+  const { index, warnings } = buildIndex(adrDir);
+  const changed = writeIndex(adrDir, index);
   return { changed, count: index.adrs.length, warnings };
 }
 
