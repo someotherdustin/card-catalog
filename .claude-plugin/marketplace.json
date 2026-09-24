@@ -1,0 +1,16 @@
+{
+  "name": "adr-manager",
+  "owner": {
+    "name": "someotherdustin"
+  },
+  "metadata": {
+    "description": "Companion plugins for ADR management in agentic workflows."
+  },
+  "plugins": [
+    {
+      "name": "adr-index",
+      "source": "./adr-index-plugin",
+      "description": "Keeps a compact index.json of ADRs (title, status, one-line summary) in sync as agents write them."
+    }
+  ]
+}

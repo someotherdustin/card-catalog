@@ -1,0 +1,17 @@
+{
+  "description": "Re-index the ADR directory whenever an ADR markdown file is written or edited.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/on-write.ts\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
