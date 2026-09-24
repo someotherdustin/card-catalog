@@ -21,13 +21,20 @@ export type AdrStatus =
   | "unspecified";
 
 export interface AdrEntry {
-  /** Sequential number from the filename, e.g. 7 for 0007-foo.md. */
+  /** Sequential number from the filename, e.g. 7 for 0007-foo.md or hub-0007-foo.md. */
   id: number;
+  /**
+   * Series prefix from the filename, e.g. "hub" for hub-0007-foo.md. Absent for
+   * plain NNNN-slug.md. Numbers are only unique within a series.
+   */
+  prefix?: string;
   slug: string;
   title: string;
   status: AdrStatus;
   /** ADR number that supersedes this one, when status is "superseded". */
   supersededBy?: number;
+  /** Series prefix of the superseding ADR, when it has one. */
+  supersededByPrefix?: string;
   /** One-line summary: the cheap-to-load part of the index. */
   summary: string;
   date?: string;
@@ -40,7 +47,9 @@ export type ParseResult =
   | { ok: true; entry: AdrEntry; warnings: string[] }
   | { ok: false; reason: string };
 
-const FILENAME_RE = /^(\d{1,5})-([a-z0-9][a-z0-9._-]*)\.md$/i;
+// An optional series prefix covers ADRs imported from another repo and kept
+// apart from the local sequence (hub-0023-slug.md next to 0023-slug.md).
+const FILENAME_RE = /^(?:([a-z][a-z0-9]*)-)?(\d{1,5})-([a-z0-9][a-z0-9._-]*)\.md$/i;
 const SUMMARY_MAX = 280;
 
 export function isAdrFilename(file: string): boolean {
@@ -50,6 +59,7 @@ export function isAdrFilename(file: string): boolean {
 export function parseAdr(file: string, content: string): ParseResult {
   const nameMatch = FILENAME_RE.exec(file);
   if (!nameMatch) return { ok: false, reason: `not an ADR filename: ${file}` };
+  const [, prefix, num = "", slug = ""] = nameMatch;
 
   const warnings: string[] = [];
   const text = content.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
@@ -59,7 +69,7 @@ export function parseAdr(file: string, content: string): ParseResult {
   if (!title) return { ok: false, reason: `no title found in ${file}` };
 
   const rawStatus = asString(fm["status"]) ?? extractSection(body, "status") ?? extractInlineField(body, "status");
-  const { status, supersededBy } = normalizeStatus(rawStatus);
+  const { status, supersededBy, supersededByPrefix } = normalizeStatus(rawStatus, prefix);
   if (rawStatus && status === "unspecified") warnings.push(`${file}: unrecognized status "${rawStatus}"`);
 
   let summary = asString(fm["summary"]) ?? extractInlineField(body, "summary") ?? extractLeadParagraph(body);
@@ -75,9 +85,9 @@ export function parseAdr(file: string, content: string): ParseResult {
   const date = asString(fm["date"]) ?? extractInlineField(body, "date");
   const tags = asList(fm["tags"]);
 
-  const [, num = "", slug = ""] = nameMatch;
   const entry: AdrEntry = {
     id: Number(num),
+    ...(prefix ? { prefix } : {}),
     slug,
     title,
     status,
@@ -85,6 +95,7 @@ export function parseAdr(file: string, content: string): ParseResult {
     file,
   };
   if (supersededBy !== undefined) entry.supersededBy = supersededBy;
+  if (supersededByPrefix) entry.supersededByPrefix = supersededByPrefix;
   if (date) entry.date = date;
   if (tags.length) entry.tags = tags;
   return { ok: true, entry, warnings };
@@ -202,18 +213,46 @@ function firstParagraph(text: string, { allowQuotes = true } = {}): string | und
 
 // --- normalization ---------------------------------------------------------
 
-export function normalizeStatus(raw: string | undefined): { status: AdrStatus; supersededBy?: number } {
+interface NormalizedStatus {
+  status: AdrStatus;
+  supersededBy?: number;
+  supersededByPrefix?: string;
+}
+
+/**
+ * `ownPrefix` is the series of the ADR being parsed: a bare "ADR-0042" in
+ * hub-0031's status means hub-0042, because that's how the series referred to
+ * itself before it was imported.
+ */
+export function normalizeStatus(raw: string | undefined, ownPrefix?: string): NormalizedStatus {
   if (!raw) return { status: "unspecified" };
   const s = cleanInline(raw).toLowerCase();
   if (s.startsWith("superseded")) {
-    const n = /(\d+)/.exec(s.replace(/^superseded/, ""));
-    return n ? { status: "superseded", supersededBy: Number(n[1]) } : { status: "superseded" };
+    const ref = supersedingRef(raw, s.replace(/^superseded/, ""), ownPrefix);
+    if (!ref) return { status: "superseded" };
+    return { status: "superseded", supersededBy: ref.id, ...(ref.prefix ? { supersededByPrefix: ref.prefix } : {}) };
   }
   for (const k of ["proposed", "accepted", "rejected", "deprecated"] as const) {
     if (s.startsWith(k)) return { status: k };
   }
   if (s.startsWith("draft")) return { status: "proposed" };
   return { status: "unspecified" };
+}
+
+/**
+ * The ADR a "superseded by …" status points at. A link to an ADR file is
+ * unambiguous, so it wins; otherwise the first number in the text, with an
+ * explicit series prefix (`hub-0042`) if there is one.
+ */
+function supersedingRef(raw: string, text: string, ownPrefix: string | undefined): { id: number; prefix?: string } | undefined {
+  for (const [, target = ""] of raw.matchAll(/\]\(([^)\s]+)\)/g)) {
+    const m = FILENAME_RE.exec(target.replace(/[#?].*$/, "").split("/").pop() ?? "");
+    if (m) return { id: Number(m[2]), ...(m[1] ? { prefix: m[1] } : {}) };
+  }
+  const m = /(?:\b([a-z][a-z0-9]*)-)?(\d+)/.exec(text);
+  if (!m) return undefined;
+  const prefix = m[1] && m[1] !== "adr" ? m[1] : ownPrefix;
+  return { id: Number(m[2]), ...(prefix ? { prefix } : {}) };
 }
 
 function cleanInline(s: string): string {

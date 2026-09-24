@@ -26,6 +26,20 @@ test("digest is empty when there are no ADRs", () => {
   assert.equal(formatDigest([{ dir: "docs/adr", adrs: [] }]), "");
 });
 
+test("digest labels prefixed ADRs by series", () => {
+  const text = formatDigest([
+    {
+      dir: "docs/adr",
+      adrs: [
+        adr(31, { prefix: "hub", file: "hub-0031-x.md", status: "superseded", supersededBy: 42, supersededByPrefix: "hub" }),
+        adr(29, { prefix: "hub", file: "hub-0029-x.md", status: "superseded", supersededBy: 4 }),
+      ],
+    },
+  ]);
+  assert.match(text, /- hub-0031 \[superseded by hub-0042\] Decision 31/);
+  assert.match(text, /- hub-0029 \[superseded by ADR-0004\] Decision 29/);
+});
+
 test("digest lists status labels, supersession and summaries", () => {
   const text = formatDigest([
     {

@@ -94,7 +94,8 @@ export function buildIndex(adrDir: string, now: Date = new Date()): BuildResult 
     }
   }
 
-  adrs.sort((a, b) => a.id - b.id || a.file.localeCompare(b.file));
+  // Unprefixed ADRs first, then each prefixed series, each in number order.
+  adrs.sort((a, b) => (a.prefix ?? "").localeCompare(b.prefix ?? "") || a.id - b.id || a.file.localeCompare(b.file));
   const index: AdrIndex = { version: INDEX_VERSION, generatedBy: "adr-index", adrs };
   const changed = JSON.stringify(previous) !== JSON.stringify(index);
   return { index, warnings, changed };

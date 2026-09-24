@@ -46,8 +46,9 @@ A repo with no ADRs gets no output.
 **After each write**, `PostToolUse` on `Write|Edit|MultiEdit` runs
 `scripts/on-write.ts`:
 
-1. Ignores the event unless the file is `docs/adr/NNNN-slug.md` (also
-   `src/<context>/docs/adr/` and adr-tools' `doc/adr/`).
+1. Ignores the event unless the file is `docs/adr/NNNN-slug.md` or
+   `docs/adr/<prefix>-NNNN-slug.md` (also `src/<context>/docs/adr/` and
+   adr-tools' `doc/adr/`).
 2. Re-parses every ADR in that directory and writes `index.json` atomically,
    and only if something changed.
 3. Always exits 0. If a file can't be parsed (for example, it has no title),
@@ -106,6 +107,23 @@ nothing else is available.
 | status  | `status` frontmatter → `## Status` section → `Status:` line → `unspecified` |
 | summary | `summary` frontmatter → `Summary:` line → first non-blockquote paragraph under the H1 → `## Decision` → `## Context` → a blockquote under the H1 (capped at 280 chars) |
 | date, tags | frontmatter or `Date:` line |
+
+### Prefixed series
+
+A directory can hold more than one numbered series, such as ADRs imported
+from another repo as `hub-0023-slug.md` next to the local `0023-slug.md`.
+Numbers are unique only within a series, so a prefixed ADR's index entry
+carries `"prefix": "hub"`, and the digest shows it as `hub-0023` rather than
+`ADR-0023`. The main sequence sorts first, then each series.
+
+A superseded status names its replacement in `supersededBy` (the number) and
+`supersededByPrefix` (the series, when there is one). A link to the
+replacing ADR's file decides which series it is in:
+`superseded by [ADR-0042](hub-0042-tls.md)` is hub-0042, and
+`superseded by [Mesa ADR-0014](0014-mesa.md)` is ADR-0014. Without a link,
+an explicit `hub-0042` in the text counts, and a bare `ADR-0042` means the
+same series as the ADR being parsed, because that's how an imported series
+referred to itself.
 
 ## Findings from mattpocock/skills (the brief's open items)
 

@@ -84,6 +84,38 @@ test("a lone blockquote is used only when nothing else gives a summary", () => {
   assert.equal(quoteOnly.summary, "Superseded by ADR-0005. Kept for history.");
 });
 
+test("prefixed filenames form their own series", () => {
+  const e = parse("hub-0023-harness.md", "# Harness\n\nA protocol client.\n\n**Status:** accepted\n");
+  assert.equal(e.id, 23);
+  assert.equal(e.prefix, "hub");
+  assert.equal(e.slug, "harness");
+  assert.equal(e.status, "accepted");
+  assert.equal(parse("0023-harness.md", "# Harness\n").prefix, undefined);
+});
+
+test("supersession resolves the series from a link, else from the text", () => {
+  const status = (file: string, s: string) => parse(file, `# X\n\nBody.\n\n**Status:** ${s}\n`);
+  const crossSeries = status("hub-0001-x.md", "superseded by [Mesa ADR-0001](0001-typescript.md) and [Mesa ADR-0014](0014-mesa.md)");
+  assert.equal(crossSeries.supersededBy, 1);
+  assert.equal(crossSeries.supersededByPrefix, undefined);
+  const sameSeries = status("hub-0031-x.md", "superseded by [ADR-0042](hub-0042-tls.md)");
+  assert.equal(sameSeries.supersededBy, 42);
+  assert.equal(sameSeries.supersededByPrefix, "hub");
+  const bare = status("hub-0031-x.md", "superseded by ADR-0042");
+  assert.equal(bare.supersededByPrefix, "hub");
+  const explicit = status("0005-x.md", "superseded by hub-0042");
+  assert.equal(explicit.supersededByPrefix, "hub");
+  assert.equal(status("0005-x.md", "superseded by ADR-0009").supersededByPrefix, undefined);
+});
+
+test("buildIndex sorts the main sequence before prefixed series", () => {
+  const dir = join(mkdtempSync(join(tmpdir(), "adr-")), "docs", "adr");
+  mkdirSync(dir, { recursive: true });
+  for (const f of ["hub-0001-a.md", "0002-b.md", "hub-0002-c.md", "0001-d.md"]) writeFileSync(join(dir, f), `# ${f}\n`);
+  const { index } = buildIndex(dir);
+  assert.deepEqual(index.adrs.map((a) => a.file), ["0001-d.md", "0002-b.md", "hub-0001-a.md", "hub-0002-c.md"]);
+});
+
 test("buildIndex keeps stale entry when a file becomes unparseable", () => {
   const dir = join(mkdtempSync(join(tmpdir(), "adr-")), "docs", "adr");
   mkdirSync(dir, { recursive: true });

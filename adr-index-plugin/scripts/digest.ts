@@ -57,9 +57,14 @@ function render(dirs: AdrDirEntries[], withoutSummary: Set<IndexedAdr>): string 
 }
 
 function label(adr: IndexedAdr): string {
-  const id = `ADR-${String(adr.id).padStart(4, "0")}`;
+  const id = ref(adr.id, adr.prefix);
   if (adr.status === "superseded" && adr.supersededBy !== undefined) {
-    return `${id} [superseded by ADR-${String(adr.supersededBy).padStart(4, "0")}]`;
+    return `${id} [superseded by ${ref(adr.supersededBy, adr.supersededByPrefix)}]`;
   }
   return adr.status === "unspecified" ? id : `${id} [${adr.status}]`;
+}
+
+/** ADR-0007 for the main sequence, hub-0007 for a prefixed series. */
+function ref(id: number, prefix: string | undefined): string {
+  return `${prefix ?? "ADR"}-${String(id).padStart(4, "0")}`;
 }
