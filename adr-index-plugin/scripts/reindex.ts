@@ -1,4 +1,4 @@
-// Backfill / repair: rebuild index.json for every ADR directory under a root.
+// Backfill / repair: rebuild index.json and INDEX.md for every ADR directory under a root.
 //   node scripts/reindex.ts [root]   (default: current directory)
 
 import { resolve } from "node:path";

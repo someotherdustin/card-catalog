@@ -6,9 +6,9 @@ ADRs written by coding agents (via `grill-with-docs` / `domain-modeling` from
 [mattpocock/skills](https://github.com/mattpocock/skills)) pile up as flat
 markdown files. This repo doesn't replace that write path. It adds a
 hook-only Claude Code plugin, **`adr-index`**, that runs *after* an ADR is
-written and keeps a compact `index.json` next to it (id, title, status,
-one-line summary). An agent can check prior decisions by reading the index,
-then open only the ADRs whose summaries look relevant.
+written and keeps an `INDEX.md` next to it: one line per ADR with its ID,
+status, title and a one-line summary. An agent checks prior decisions by
+grepping the index, then opens only the ADRs whose lines match.
 
 ## Install
 
@@ -24,36 +24,55 @@ built-in type stripping, so there's no build step and no runtime dependencies.
 
 Two hooks:
 
-**At session start**, `scripts/session-start.ts` puts a compact digest of
-every ADR into the agent's context. That's how the index actually gets used:
+**At session start**, `scripts/session-start.ts` tells the agent where the
+index is and how to use it. It doesn't load the ADRs themselves, so its cost
+is the same for 10 ADRs or 500:
 
 ```
-docs/adr/
-- ADR-0003 [superseded by ADR-0009] REST over GraphQL (0003-rest-over-graphql.md)
-  We picked REST because ...
-- ADR-0009 [accepted] GraphQL gateway for mobile (0009-graphql-gateway.md)
-  ...
+This repo records architecture decisions as ADRs. Each ADR directory has an INDEX.md with one line per ADR:
+ID, status, date amended, title and a one-line summary.
+
+- docs/adr/INDEX.md (67 ADRs)
+
+Before changing an area, grep the index for its terms and open the ADRs whose lines match.
+If your work would contradict an accepted ADR, say so explicitly rather than silently overriding it.
 ```
 
-The digest comes with a short instruction: check it before changing the same
-area, open full ADRs only when a summary looks relevant, and flag conflicts
-with accepted ADRs. It's built in memory from the ADR files, so it's current
-after a `git pull` and never writes to the repo. It's capped at about 6,000
-characters. Past that, summaries are dropped (superseded, deprecated and
-rejected ADRs first, then the oldest), but every ADR keeps its title line.
-A repo with no ADRs gets no output.
+It rebuilds the index in memory to check whether `INDEX.md` is current. If
+it isn't (for example, someone added an ADR by hand), the line says
+`out of date` and the message includes the reindex command. It never writes
+to the repo. A repo with no ADRs gets no output.
 
 **After each write**, `PostToolUse` on `Write|Edit|MultiEdit` runs
 `scripts/on-write.ts`:
 
-1. Ignores the event unless the file is `docs/adr/NNNN-slug.md` (also
-   `src/<context>/docs/adr/` and adr-tools' `doc/adr/`).
-2. Re-parses every ADR in that directory and writes `index.json` atomically,
-   and only if something changed.
+1. Ignores the event unless the file is `docs/adr/NNNN-slug.md` or
+   `docs/adr/<prefix>-NNNN-slug.md` (also `src/<context>/docs/adr/` and
+   adr-tools' `doc/adr/`).
+2. Re-parses every ADR in that directory and writes `INDEX.md` and
+   `index.json` atomically, each only if its content changed.
 3. Always exits 0. If a file can't be parsed (for example, it has no title),
    the hook keeps its previous index entry, or skips it if there isn't one,
    and logs a warning to stderr. It never interrupts the session that wrote
    the ADR.
+
+`INDEX.md` is what agents read. One line per ADR means a grep hit returns
+the whole record, where a multi-line format would return a fragment with no
+ADR attached to it. Each ID links to its file, which gives agents the path
+and lets people click through on GitHub:
+
+```
+- [ADR-0003](0003-rest-over-graphql.md) [superseded by ADR-0009] 2026-04-01 | REST over GraphQL | We picked REST because ...
+- [ADR-0009](0009-graphql-gateway.md) [accepted] 2026-04-01 | GraphQL gateway for mobile | ...
+```
+
+It's a flat list in number order. A curated, human-facing overview (grouped
+by topic, say) is left to the repo's own `docs/adr/README.md`; the plugin
+doesn't generate or check one.
+
+`index.json` is the plugin's own state: the same fields plus a content hash
+and amendment time per ADR. Agents aren't pointed at it. It's written one ADR
+per line so git diffs stay readable; expanded, an entry looks like this:
 
 ```json
 {
@@ -87,20 +106,42 @@ would make every ADR look freshly amended in every clone. So:
   plugin 0.1), `amendedAt` is the file's last commit date. For a file git
   doesn't track yet, it's the current time.
 
-Commit `index.json` alongside the ADRs so these timestamps carry across clones.
-The session-start digest shows the date on each ADR's line.
+Commit `INDEX.md` and `index.json` alongside the ADRs so these timestamps
+carry across clones. `INDEX.md` shows the date on each ADR's line.
 
 To index ADRs that existed before the plugin was installed, or to repair an index:
 `node adr-index-plugin/scripts/reindex.ts [repo-root]`.
 
 ### Parsing rules (lenient)
 
+A blockquote right under the title is treated as an editorial note added
+later (`> **Annotation — 2026-09-23:** …`, `> **Confirmed …**`,
+`> **Superseded by ADR-0005.** …`), so it's used as the summary only when
+nothing else is available.
+
 | Field   | Tried in order |
 |---------|----------------|
 | title   | `title` frontmatter → first `# ` heading (strips `1. ` / `ADR-0001:` prefixes) |
 | status  | `status` frontmatter → `## Status` section → `Status:` line → `unspecified` |
-| summary | `summary` frontmatter → `Summary:` line → first paragraph under the H1 → `## Decision` → `## Context` (capped at 280 chars) |
+| summary | `summary` frontmatter → `Summary:` line → first non-blockquote paragraph under the H1 → `## Decision` → `## Context` → a blockquote under the H1 (capped at 280 chars) |
 | date, tags | frontmatter or `Date:` line |
+
+### Prefixed series
+
+A directory can hold more than one numbered series, such as ADRs imported
+from another repo as `hub-0023-slug.md` next to the local `0023-slug.md`.
+Numbers are unique only within a series, so a prefixed ADR's index entry
+carries `"prefix": "hub"`, and `INDEX.md` shows it as `hub-0023` rather than
+`ADR-0023`. The main sequence sorts first, then each series.
+
+A superseded status names its replacement in `supersededBy` (the number) and
+`supersededByPrefix` (the series, when there is one). A link to the
+replacing ADR's file decides which series it is in:
+`superseded by [ADR-0042](hub-0042-tls.md)` is hub-0042, and
+`superseded by [Mesa ADR-0014](0014-mesa.md)` is ADR-0014. Without a link,
+an explicit `hub-0042` in the text counts, and a bare `ADR-0042` means the
+same series as the ADR being parsed, because that's how an imported series
+referred to itself.
 
 ## Findings from mattpocock/skills (the brief's open items)
 
@@ -116,7 +157,8 @@ To index ADRs that existed before the plugin was installed, or to repair an inde
 - **Summary line.** That lead paragraph already works as a summary, so the
   plugin doesn't need an upstream change or a local override. A `summary:`
   frontmatter key is honored if someone adds one.
-- **Storage.** The index is JSON only. SQLite isn't worth the dependency at
+- **Storage.** Two plain files: `INDEX.md` for agents and `index.json` for
+  the plugin's bookkeeping. SQLite isn't worth the dependency at
   ADR-collection scale.
 
 ## Development

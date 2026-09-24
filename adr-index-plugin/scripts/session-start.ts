@@ -1,18 +1,22 @@
-// SessionStart hook: puts a compact digest of every ADR (number, status,
-// title, one-line summary) into the agent's context, so prior decisions are
-// visible without opening any ADR bodies.
+// SessionStart hook: tells the agent where the ADR index is and how to use
+// it. It doesn't load the ADRs themselves: that cost grows with every ADR,
+// and most sessions touch few of them. The agent greps INDEX.md for the area
+// it's changing and opens only the ADRs that match.
 //
-// Read-only: the digest is built in memory from the ADR files, so it is
-// current even after a `git pull` and never dirties the working tree. Like
-// on-write, it always exits 0 and prints nothing when there are no ADRs.
+// Read-only: it rebuilds the index in memory only to check whether INDEX.md
+// on disk is current, and never writes. Like on-write, it always exits 0 and
+// prints nothing when there are no ADRs.
 
-import { relative } from "node:path";
-import { formatDigest } from "./digest.ts";
-import { buildIndex, findAdrDirs } from "./index-store.ts";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import { INDEX_MD_FILE } from "./index-md.ts";
+import { buildIndex, findAdrDirs, indexIsCurrent } from "./index-store.ts";
 
 interface HookInput {
   cwd?: string;
 }
+
+const reindexScript = join(dirname(fileURLToPath(import.meta.url)), "reindex.ts");
 
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
@@ -20,21 +24,41 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+function pointerText(dirs: { dir: string; count: number; current: boolean }[]): string {
+  const listed = dirs.filter((d) => d.count > 0);
+  if (listed.length === 0) return "";
+  const lines = [
+    "This repo records architecture decisions as ADRs. Each ADR directory has an INDEX.md with one line per ADR:",
+    "ID, status, date amended, title and a one-line summary.",
+    "",
+    ...listed.map(
+      (d) => `- ${join(d.dir, INDEX_MD_FILE)} (${String(d.count)} ADRs${d.current ? "" : ", out of date"})`,
+    ),
+    "",
+    "Before changing an area, grep the index for its terms and open the ADRs whose lines match.",
+    "If your work would contradict an accepted ADR, say so explicitly rather than silently overriding it.",
+  ];
+  if (listed.some((d) => !d.current)) {
+    lines.push(`To bring an out-of-date index up to date, run: node "${reindexScript}"`);
+  }
+  return lines.join("\n");
+}
+
 async function main(): Promise<void> {
   const raw = await readStdin();
   const input = (raw.trim() ? JSON.parse(raw) : {}) as HookInput;
   const root = process.env["CLAUDE_PROJECT_DIR"] ?? input.cwd ?? process.cwd();
 
-  const dirs = findAdrDirs(root).map((dir) => ({
-    dir: relative(root, dir) || ".",
-    adrs: buildIndex(dir).index.adrs,
-  }));
-  const digest = formatDigest(dirs);
-  if (!digest) return;
+  const dirs = findAdrDirs(root).map((dir) => {
+    const { index } = buildIndex(dir);
+    return { dir: relative(root, dir) || ".", count: index.adrs.length, current: indexIsCurrent(dir, index) };
+  });
+  const text = pointerText(dirs);
+  if (!text) return;
 
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: digest },
+      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: text },
     }),
   );
 }

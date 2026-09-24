@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { contentHash, lastCommitDates, resolveAmendedAt } from "../scripts/amendments.ts";
-import { buildIndex, writeIndex } from "../scripts/index-store.ts";
+import { buildIndex, indexIsCurrent, writeIndex } from "../scripts/index-store.ts";
 
 const T1 = new Date("2026-09-01T00:00:00.000Z");
 const T2 = new Date("2026-09-10T00:00:00.000Z");
@@ -37,12 +37,12 @@ test("buildIndex: amendedAt survives rebuilds and moves only on content change",
 
   const unchanged = buildIndex(dir, T2);
   assert.equal(unchanged.index.adrs[0]?.amendedAt, T1.toISOString());
-  assert.equal(unchanged.changed, false);
+  assert.equal(indexIsCurrent(dir, unchanged.index), true);
 
   writeFileSync(join(dir, "0001-a.md"), "# A\n\nFirst, amended.\n");
   const amended = buildIndex(dir, T2);
   assert.equal(amended.index.adrs[0]?.amendedAt, T2.toISOString());
-  assert.equal(amended.changed, true);
+  assert.equal(indexIsCurrent(dir, amended.index), false);
 });
 
 test("an unparseable edit keeps the stale entry but still records the amendment", () => {
