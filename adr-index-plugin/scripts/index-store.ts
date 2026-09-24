@@ -5,16 +5,27 @@
 
 import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
+import { contentHash, lastCommitDates, resolveAmendedAt } from "./amendments.ts";
 import { type AdrEntry, isAdrFilename, parseAdr } from "./parse-adr.ts";
 
 export const INDEX_FILE = "index.json";
-export const INDEX_VERSION = 1;
+export const INDEX_VERSION = 2;
+
+export interface IndexedAdr extends AdrEntry {
+  /** Short hash of the file's content; `amendedAt` moves only when this does. */
+  contentHash: string;
+  /** When the ADR's content last changed (UTC ISO 8601). Equals creation time if never amended. */
+  amendedAt: string;
+}
 
 export interface AdrIndex {
   version: number;
   generatedBy: string;
-  adrs: AdrEntry[];
+  adrs: IndexedAdr[];
 }
+
+/** Entries as read back from disk: version-1 indexes have no hash or timestamp. */
+type StoredAdr = AdrEntry & Partial<Pick<IndexedAdr, "contentHash" | "amendedAt">>;
 
 export interface BuildResult {
   index: AdrIndex;
@@ -36,24 +47,26 @@ export function adrDirForFile(filePath: string): string | undefined {
   return isAdrDir(dir) && isAdrFilename(basename(filePath)) ? dir : undefined;
 }
 
-export function readIndex(adrDir: string): AdrIndex | undefined {
+export function readIndex(adrDir: string): { adrs: StoredAdr[] } | undefined {
   try {
     const parsed: unknown = JSON.parse(readFileSync(join(adrDir, INDEX_FILE), "utf8"));
-    return isAdrIndex(parsed) ? parsed : undefined;
+    return isStoredIndex(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }
 }
 
-function isAdrIndex(value: unknown): value is AdrIndex {
+function isStoredIndex(value: unknown): value is { adrs: StoredAdr[] } {
   return typeof value === "object" && value !== null && Array.isArray((value as { adrs?: unknown }).adrs);
 }
 
-export function buildIndex(adrDir: string): BuildResult {
+export function buildIndex(adrDir: string, now: Date = new Date()): BuildResult {
   const previous = readIndex(adrDir);
   const prevByFile = new Map(previous?.adrs.map((e) => [e.file, e]) ?? []);
   const warnings: string[] = [];
-  const adrs: AdrEntry[] = [];
+  const adrs: IndexedAdr[] = [];
+  let commitDates: Map<string, string> | undefined;
+  const commitDate = (file: string) => (commitDates ??= lastCommitDates(adrDir)).get(file);
 
   for (const file of readdirSync(adrDir).filter(isAdrFilename).sort()) {
     let content: string;
@@ -63,15 +76,21 @@ export function buildIndex(adrDir: string): BuildResult {
       warnings.push(`${file}: unreadable (${err instanceof Error ? err.message : String(err)})`);
       continue;
     }
+    const prev = prevByFile.get(file);
+    const hash = contentHash(content);
+    const stamp = () => ({
+      contentHash: hash,
+      amendedAt: resolveAmendedAt(hash, prev, () => commitDate(file), now),
+    });
     const result = parseAdr(file, content);
     if (result.ok) {
-      adrs.push(result.entry);
+      adrs.push({ ...result.entry, ...stamp() });
       warnings.push(...result.warnings);
     } else {
-      // Fail soft: a stale entry beats a missing one. Keep what we had.
-      const stale = prevByFile.get(file);
-      if (stale) adrs.push(stale);
-      warnings.push(`${result.reason}${stale ? " (kept previous index entry)" : " (skipped)"}`);
+      // Fail soft: a stale entry beats a missing one. Keep what we had, but
+      // still record that the file changed.
+      if (prev) adrs.push({ ...prev, ...stamp() });
+      warnings.push(`${result.reason}${prev ? " (kept previous index entry)" : " (skipped)"}`);
     }
   }
 

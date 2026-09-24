@@ -5,14 +5,14 @@
 // (superseded / deprecated / rejected) are dropped first, then summaries of
 // the oldest active ones; every ADR keeps at least its title line.
 
-import type { AdrEntry } from "./parse-adr.ts";
+import type { IndexedAdr } from "./index-store.ts";
 
 export const DEFAULT_BUDGET = 6000;
 
 export interface AdrDirEntries {
   /** ADR directory relative to the project root, e.g. "docs/adr". */
   dir: string;
-  adrs: AdrEntry[];
+  adrs: IndexedAdr[];
 }
 
 const INACTIVE = new Set(["superseded", "deprecated", "rejected"]);
@@ -27,7 +27,7 @@ export function formatDigest(dirs: AdrDirEntries[], budget = DEFAULT_BUDGET): st
     ...all.filter((a) => INACTIVE.has(a.status)),
     ...all.filter((a) => !INACTIVE.has(a.status)),
   ];
-  const withoutSummary = new Set<AdrEntry>();
+  const withoutSummary = new Set<IndexedAdr>();
 
   let text = render(nonEmpty, withoutSummary);
   for (const adr of dropOrder) {
@@ -38,7 +38,7 @@ export function formatDigest(dirs: AdrDirEntries[], budget = DEFAULT_BUDGET): st
   return text;
 }
 
-function render(dirs: AdrDirEntries[], withoutSummary: Set<AdrEntry>): string {
+function render(dirs: AdrDirEntries[], withoutSummary: Set<IndexedAdr>): string {
   const lines = [
     "Architecture decisions recorded in this repo (from the adr-index plugin).",
     "Check these before proposing changes in the same area. Open the full ADR only when a summary looks relevant.",
@@ -47,7 +47,7 @@ function render(dirs: AdrDirEntries[], withoutSummary: Set<AdrEntry>): string {
   for (const { dir, adrs } of dirs) {
     lines.push("", `${dir}/`);
     for (const adr of adrs) {
-      lines.push(`- ${label(adr)} ${adr.title} (${adr.file})`);
+      lines.push(`- ${label(adr)} ${adr.title} (${adr.file}, amended ${adr.amendedAt.slice(0, 10)})`);
       if (!withoutSummary.has(adr) && adr.summary) lines.push(`  ${adr.summary}`);
     }
   }
@@ -56,7 +56,7 @@ function render(dirs: AdrDirEntries[], withoutSummary: Set<AdrEntry>): string {
   return lines.join("\n");
 }
 
-function label(adr: AdrEntry): string {
+function label(adr: IndexedAdr): string {
   const id = `ADR-${String(adr.id).padStart(4, "0")}`;
   if (adr.status === "superseded" && adr.supersededBy !== undefined) {
     return `${id} [superseded by ADR-${String(adr.supersededBy).padStart(4, "0")}]`;

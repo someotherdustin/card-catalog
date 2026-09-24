@@ -57,7 +57,7 @@ A repo with no ADRs gets no output.
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "generatedBy": "adr-index",
   "adrs": [
     {
@@ -67,11 +67,28 @@ A repo with no ADRs gets no output.
       "status": "superseded",
       "supersededBy": 9,
       "summary": "We picked REST because ...",
-      "file": "0003-rest-over-graphql.md"
+      "file": "0003-rest-over-graphql.md",
+      "contentHash": "9f2c4e1ab07d3355",
+      "amendedAt": "2026-04-01T12:00:00.000Z"
     }
   ]
 }
 ```
+
+`amendedAt` is when the ADR's content last changed. If the ADR was never
+amended, it's the creation time. It's based on a content hash, not the file's
+modification time, because git resets modification times on checkout, which
+would make every ADR look freshly amended in every clone. So:
+
+- If the content hash matches the previous index entry, `amendedAt` stays the
+  same. Line-ending and trailing-whitespace changes don't count.
+- If the hash differs, `amendedAt` becomes the current time.
+- If the index has no hash for the file yet (a backfill, or an index from
+  plugin 0.1), `amendedAt` is the file's last commit date. For a file git
+  doesn't track yet, it's the current time.
+
+Commit `index.json` alongside the ADRs so these timestamps carry across clones.
+The session-start digest shows the date on each ADR's line.
 
 To index ADRs that existed before the plugin was installed, or to repair an index:
 `node adr-index-plugin/scripts/reindex.ts [repo-root]`.
@@ -115,4 +132,8 @@ npm run check      # all three
 ```
 
 The pre-commit hook runs `lint` and `typecheck` on the whole project and
-rejects the commit if either fails.
+rejects the commit if either fails. `git commit --no-verify` skips it, so
+CI (`.github/workflows/ci.yml`) runs lint, typecheck and tests on every PR and
+push to `main`, on Node 22.18 (the minimum), latest 22 and 24. To block
+merges on it, add a branch ruleset for `main` that requires the
+`check (node 22.18)`, `check (node 22)` and `check (node 24)` status checks.

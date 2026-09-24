@@ -6,12 +6,12 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { formatDigest } from "../scripts/digest.ts";
-import type { AdrEntry } from "../scripts/parse-adr.ts";
+import type { IndexedAdr } from "../scripts/index-store.ts";
 
 const script = join(dirname(fileURLToPath(import.meta.url)), "..", "scripts", "session-start.ts");
 
-function adr(id: number, over: Partial<AdrEntry> = {}): AdrEntry {
-  return { id, slug: `adr-${String(id)}`, title: `Decision ${String(id)}`, status: "accepted", summary: `Summary ${String(id)}.`, file: `${String(id).padStart(4, "0")}-adr-${String(id)}.md`, ...over };
+function adr(id: number, over: Partial<IndexedAdr> = {}): IndexedAdr {
+  return { contentHash: "h", amendedAt: "2026-09-20T10:00:00.000Z", id, slug: `adr-${String(id)}`, title: `Decision ${String(id)}`, status: "accepted", summary: `Summary ${String(id)}.`, file: `${String(id).padStart(4, "0")}-adr-${String(id)}.md`, ...over };
 }
 
 function runHook(root: string): string {
@@ -34,7 +34,7 @@ test("digest lists status labels, supersession and summaries", () => {
     },
   ]);
   assert.match(text, /^docs\/adr\/$/m);
-  assert.match(text, /- ADR-0001 \[superseded by ADR-0002\] Decision 1 \(0001-adr-1\.md\)/);
+  assert.match(text, /- ADR-0001 \[superseded by ADR-0002\] Decision 1 \(0001-adr-1\.md, amended 2026-09-20\)/);
   assert.match(text, /- ADR-0002 \[accepted\] Decision 2/);
   assert.match(text, /- ADR-0003 Decision 3/);
   assert.match(text, /^ {2}Summary 2\.$/m);
