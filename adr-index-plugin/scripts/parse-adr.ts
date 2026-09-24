@@ -52,28 +52,29 @@ export function parseAdr(file: string, content: string): ParseResult {
   if (!nameMatch) return { ok: false, reason: `not an ADR filename: ${file}` };
 
   const warnings: string[] = [];
-  const text = content.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  const text = content.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
   const { data: fm, body } = splitFrontmatter(text);
 
-  const title = asString(fm.title) ?? extractTitle(body);
+  const title = asString(fm["title"]) ?? extractTitle(body);
   if (!title) return { ok: false, reason: `no title found in ${file}` };
 
-  const rawStatus = asString(fm.status) ?? extractSection(body, "status") ?? extractInlineField(body, "status");
+  const rawStatus = asString(fm["status"]) ?? extractSection(body, "status") ?? extractInlineField(body, "status");
   const { status, supersededBy } = normalizeStatus(rawStatus);
   if (rawStatus && status === "unspecified") warnings.push(`${file}: unrecognized status "${rawStatus}"`);
 
-  let summary = asString(fm.summary) ?? extractInlineField(body, "summary") ?? extractLeadParagraph(body);
+  let summary = asString(fm["summary"]) ?? extractInlineField(body, "summary") ?? extractLeadParagraph(body);
   if (!summary) {
     summary = extractSection(body, "decision") ?? extractSection(body, "context") ?? "";
     if (!summary) warnings.push(`${file}: no summary could be extracted`);
   }
 
-  const date = asString(fm.date) ?? extractInlineField(body, "date");
-  const tags = asList(fm.tags);
+  const date = asString(fm["date"]) ?? extractInlineField(body, "date");
+  const tags = asList(fm["tags"]);
 
+  const [, num = "", slug = ""] = nameMatch;
   const entry: AdrEntry = {
-    id: Number(nameMatch[1]),
-    slug: nameMatch[2],
+    id: Number(num),
+    slug,
     title,
     status,
     summary: truncate(cleanInline(summary), SUMMARY_MAX),
@@ -95,26 +96,26 @@ export function splitFrontmatter(text: string): { data: Record<string, FmValue>;
   if (!m) return { data: {}, body: text };
 
   const data: Record<string, FmValue> = {};
-  let listKey: string | null = null;
-  for (const line of m[1].split("\n")) {
-    const item = /^\s+-\s+(.*)$/.exec(line) ?? /^-\s+(.*)$/.exec(line);
-    if (item && listKey) {
-      (data[listKey] as string[]).push(unquote(item[1]));
+  let list: string[] | null = null;
+  for (const line of (m[1] ?? "").split("\n")) {
+    const item = /^\s*-\s+(.*)$/.exec(line);
+    if (item && list) {
+      list.push(unquote(item[1] ?? ""));
       continue;
     }
     const kv = /^([A-Za-z0-9_-]+)\s*:\s*(.*)$/.exec(line);
     if (!kv) continue;
-    const key = kv[1].toLowerCase();
-    const value = kv[2].trim();
+    const key = (kv[1] ?? "").toLowerCase();
+    const value = (kv[2] ?? "").trim();
     if (value === "") {
-      data[key] = [];
-      listKey = key;
+      list = [];
+      data[key] = list;
     } else if (value.startsWith("[") && value.endsWith("]")) {
       data[key] = value.slice(1, -1).split(",").map(unquote).filter(Boolean);
-      listKey = null;
+      list = null;
     } else {
       data[key] = unquote(value);
-      listKey = null;
+      list = null;
     }
   }
   return { data, body: text.slice(m[0].length) };
@@ -122,7 +123,7 @@ export function splitFrontmatter(text: string): { data: Record<string, FmValue>;
 
 function unquote(s: string): string {
   const t = s.trim();
-  if (t.length >= 2 && (t[0] === '"' || t[0] === "'") && t.at(-1) === t[0]) return t.slice(1, -1);
+  if (t.length >= 2 && (t.startsWith('"') || t.startsWith("'")) && t.endsWith(t.charAt(0))) return t.slice(1, -1);
   return t;
 }
 
@@ -144,7 +145,7 @@ function extractTitle(body: string): string | undefined {
   const m = /^#[ \t]+(.+?)[ \t#]*$/m.exec(body);
   if (!m) return undefined;
   // "1. Record architecture decisions" (adr-tools), "ADR-0007: Foo", "ADR 7 - Foo"
-  const t = m[1]
+  const t = (m[1] ?? "")
     .replace(/^ADR[- ]?\d+\s*[:.\-–—]\s*/i, "")
     .replace(/^\d+\.\s+/, "")
     .trim();
@@ -165,7 +166,7 @@ function extractSection(body: string, name: string): string | undefined {
 function extractInlineField(body: string, name: string): string | undefined {
   const re = new RegExp(`^[ \\t]*(?:[-*][ \\t]+)?(?:\\*\\*|__)?${name}(?:\\*\\*|__)?[ \\t]*:(?:\\*\\*|__)?[ \\t]*(.+)$`, "im");
   const m = re.exec(body);
-  return m ? m[1].replace(/(\*\*|__)$/, "").trim() || undefined : undefined;
+  return m?.[1] ? m[1].replace(/(\*\*|__)$/, "").trim() || undefined : undefined;
 }
 
 /** First prose paragraph after the H1, skipping inline metadata lines. */

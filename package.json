@@ -1,0 +1,24 @@
+{
+  "name": "adr-manager",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings=0 .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test adr-index-plugin/test/*.test.ts",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "reindex": "node adr-index-plugin/scripts/reindex.ts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.4",
+    "eslint": "^10.11.0",
+    "husky": "^9.1.7",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

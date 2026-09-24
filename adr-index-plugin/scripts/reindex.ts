@@ -11,5 +11,5 @@ if (!dirs.length) console.log(`No docs/adr or doc/adr directories under ${root}`
 for (const dir of dirs) {
   const { changed, count, warnings } = refreshIndex(dir);
   for (const w of warnings) console.warn(`warning: ${w}`);
-  console.log(`${changed ? "updated" : "unchanged"}: ${dir} (${count} ADRs)`);
+  console.log(`${changed ? "updated" : "unchanged"}: ${dir} (${String(count)} ADRs)`);
 }
