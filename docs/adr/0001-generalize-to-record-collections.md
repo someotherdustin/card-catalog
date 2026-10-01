@@ -186,6 +186,10 @@ message gives.
 > `node_modules`, so the npm package is the core and CLI compiled to
 > JavaScript when a version tag is pushed. Compiled output is never
 > committed, and the plugin and the repo still have no build step.
+>
+> npm refused the name `card-catalog` as too similar to an existing
+> package, so the package is `@someotherdustin/card-catalog`. The command
+> it installs is still `card-catalog`.
 
 ### 5. Indexes have a single writer
 

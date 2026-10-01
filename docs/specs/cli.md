@@ -4,12 +4,13 @@ The CLI is how operators and CI use card-catalog, and what helper skills and
 agents call. It runs the same core as the hooks.
 
 ```
-npx card-catalog <command> [options]
+npx @someotherdustin/card-catalog <command> [options]
 node <plugin>/scripts/cli.ts <command> [options]
 ```
 
-The npm package `card-catalog` and the plugin carry the same version. The
-plugin runs its TypeScript directly, with no build step. Node doesn't strip
+The npm package `@someotherdustin/card-catalog`, whose command is
+`card-catalog`, and the plugin carry the same version. The plugin runs its
+TypeScript directly, with no build step. Node doesn't strip
 types under `node_modules`, so the npm package holds the same core and CLI
 compiled to JavaScript at publish time; compiled output is never committed.
 Pushing a `v*` tag runs a workflow that checks the tag, `package.json` and
@@ -191,5 +192,5 @@ note    not-a-record     docs/postmortems/notes.md  name doesn't match id patter
 
 `fix` is present when there's a command or edit that resolves the problem.
 
-To run it from pre-commit or CI, call `npx card-catalog validate`.
+To run it from pre-commit or CI, call `npx @someotherdustin/card-catalog validate`.
 card-catalog doesn't install git hooks itself.

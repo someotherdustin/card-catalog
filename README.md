@@ -30,10 +30,12 @@ Requires Node ≥ 22.18. The plugin's scripts are TypeScript run directly by
 Node's built-in type stripping, so there's no build step and no runtime
 dependencies.
 
-Without Claude Code, or in CI, use the CLI from npm:
+Without Claude Code, or in CI, use the CLI from npm. The package is
+`@someotherdustin/card-catalog`, and the command it installs is
+`card-catalog`:
 
 ```
-npx card-catalog list
+npx @someotherdustin/card-catalog list
 ```
 
 **Upgrading from `adr-index`.** Before 0.3.0 the plugin was `adr-index` in
@@ -177,7 +179,7 @@ CI. It fails on a stale or missing index, an orphaned index and broken
 config:
 
 ```
-npx card-catalog validate
+npx @someotherdustin/card-catalog validate
 ```
 
 card-catalog doesn't install git hooks itself, since that would mean
@@ -227,5 +229,7 @@ it, add a branch ruleset for `main` that requires the `check (node 22.18)`,
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It checks that the
 tag, `npm/package.json`, the plugin manifest and the CLI agree on the
-version, compiles, and publishes `npm/` with npm provenance. It needs an
-`NPM_TOKEN` repository secret.
+version, compiles, and publishes `npm/` with npm provenance. It
+authenticates through npm trusted publishing, so there's no token to keep:
+the package's npm settings name this repo and `release.yml` as its trusted
+publisher.

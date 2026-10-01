@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # npm provenance
+  id-token: write # npm trusted publishing and provenance
 
 jobs:
   publish:
@@ -34,7 +34,7 @@ jobs:
           done
       - run: npm run check
       - run: npm run build:npm
+      # Trusted publishing (no token) needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - run: npm install -g npm@11
       - run: npm publish --provenance --access public
         working-directory: npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
