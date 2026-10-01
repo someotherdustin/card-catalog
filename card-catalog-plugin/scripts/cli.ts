@@ -2,7 +2,7 @@
 // The card-catalog CLI: how operators and CI use card-catalog, and what
 // helper skills and agents call. It runs the same core as the hooks.
 //
-//   node scripts/cli.ts <command> [options]      (npx card-catalog in the npm package)
+//   node scripts/cli.ts <command> [options]      (card-catalog from the npm package)
 
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
