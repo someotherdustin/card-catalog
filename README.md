@@ -12,9 +12,10 @@ one-line summary. An agent checks prior decisions by grepping the index, then
 opens only the ADRs whose lines match.
 
 Today it indexes ADRs only.
-[ADR-0001](docs/adr/0001-generalize-to-record-collections.md) proposes
-extending it to other records that pile up the same way: RFCs, specs,
-runbooks, postmortems.
+[ADR-0001](docs/adr/0001-generalize-to-record-collections.md) extends it to
+other records that pile up the same way: RFCs, specs, runbooks,
+postmortems. The [specs](docs/specs/README.md) define the config, profiles,
+index format, CLI and checks that work is building toward.
 
 ## Install
 
