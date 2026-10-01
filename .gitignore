@@ -1,2 +1,5 @@
 node_modules/
 *.tmp
+npm/dist/
+npm/README.md
+npm/card-catalog.schema.json

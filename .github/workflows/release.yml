@@ -1,0 +1,40 @@
+name: Release
+
+# Pushing a v* tag publishes the npm package: the core and CLI compiled to
+# JavaScript, since Node doesn't strip types under node_modules. The plugin
+# itself is published by the marketplace from the repo, at the same version.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+      - run: npm ci
+      - name: Check the tag, package.json, plugin.json and the CLI carry one version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for v in \
+            "$(node -p "require('./npm/package.json').version")" \
+            "$(node -p "require('./card-catalog-plugin/.claude-plugin/plugin.json').version")" \
+            "$(node card-catalog-plugin/scripts/cli.ts --version)"; do
+            if [ "$v" != "$tag" ]; then echo "version $v doesn't match tag v$tag"; exit 1; fi
+          done
+      - run: npm run check
+      - run: npm run build:npm
+      - run: npm publish --provenance --access public
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

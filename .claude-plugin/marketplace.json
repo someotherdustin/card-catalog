@@ -10,7 +10,7 @@
     {
       "name": "card-catalog",
       "source": "./card-catalog-plugin",
-      "description": "Keeps a one-line-per-record INDEX.md next to each ADR directory in sync as records are written, so agents can check prior decisions by grepping it."
+      "description": "Keeps a one-line-per-record INDEX.md next to each collection of records (ADRs by default) in sync as records are written, so agents can find prior records by grepping it."
     }
   ]
 }

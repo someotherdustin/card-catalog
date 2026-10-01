@@ -1,72 +1,81 @@
-// SessionStart hook: tells the agent where the ADR index is and how to use
-// it. It doesn't load the ADRs themselves: that cost grows with every ADR,
-// and most sessions touch few of them. The agent greps INDEX.md for the area
-// it's changing and opens only the ADRs that match.
+// SessionStart hook: tells the agent where each announced collection's index
+// is and how to use it. It doesn't load the records themselves: that cost
+// grows with every record, and most sessions touch few of them. The agent
+// greps the indexes for the area it's changing and opens only the records
+// whose lines match. See docs/specs/hooks.md.
 //
-// Read-only: it rebuilds the index in memory only to check whether INDEX.md
-// on disk is current, and never writes. Like on-write, it always exits 0 and
-// prints nothing when there are no ADRs.
+// Read-only: it rebuilds indexes in memory only to check whether the ones on
+// disk are current, and never writes. It always exits 0 and prints nothing
+// when there's nothing to say.
 
-import { dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
-import { INDEX_MD_FILE } from "./index-md.ts";
-import { buildIndex, findAdrDirs, indexIsCurrent } from "./index-store.ts";
+import { type Collection } from "./core/collections.ts";
+import { buildIndex } from "./core/index-build.ts";
+import { findOrphans } from "./core/orphans.ts";
+import { findRepoRoot } from "./core/paths.ts";
+import { recordCount, recordNoun } from "./core/profile.ts";
+import { openRepo } from "./core/repo.ts";
+import { CLI_PATH, readHookInput, runHook } from "./hook-io.ts";
 
-interface HookInput {
-  cwd?: string;
+interface Listed {
+  c: Collection;
+  count: number;
+  stale: boolean;
 }
 
-const reindexScript = join(dirname(fileURLToPath(import.meta.url)), "reindex.ts");
+function sessionStartMessage(projectDir: string): string {
+  const root = findRepoRoot(projectDir);
+  const opened = openRepo(root);
+  if (!opened.ok) return `card-catalog.json is invalid, so no index was checked. Run: node "${CLI_PATH}" validate`;
+  const { repo } = opened;
 
-async function readStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-  return Buffer.concat(chunks).toString("utf8");
-}
-
-function pointerText(dirs: { dir: string; count: number; current: boolean }[]): string {
-  const listed = dirs.filter((d) => d.count > 0);
-  if (listed.length === 0) return "";
-  const lines = [
-    "This repo records architecture decisions as ADRs. Each ADR directory has an INDEX.md with one line per ADR:",
-    "ID, status, date amended, title and a one-line summary.",
-    "",
-    ...listed.map(
-      (d) => `- ${join(d.dir, INDEX_MD_FILE)} (${String(d.count)} ADRs${d.current ? "" : ", out of date"})`,
-    ),
-    "",
-    "Before changing an area, grep the index for its terms and open the ADRs whose lines match.",
-    "If your work would contradict an accepted ADR, say so explicitly rather than silently overriding it.",
-  ];
-  if (listed.some((d) => !d.current)) {
-    lines.push(`To bring an out-of-date index up to date, run: node "${reindexScript}"`);
+  const listed: Listed[] = [];
+  for (const c of repo.collections) {
+    if (!c.settings.announce || c.indexFile === undefined) continue;
+    const built = buildIndex(repo, c);
+    if (built.records.length === 0) continue;
+    listed.push({ c, count: built.records.length, stale: built.state !== "current" });
   }
+  const orphans = findOrphans(repo, { allMarkdown: false });
+
+  const lines: string[] = [];
+  if (listed.length) {
+    const types = [...new Map(listed.map((l) => [l.c.type, l.c])).values()];
+    const withStatus = types.filter((c) => c.profile.status !== null).length;
+    const shape = `label, ${withStatus ? "status, " : ""}date amended, title and a one-line summary.`;
+    const only = types.length === 1 ? types[0] : undefined;
+    if (only) {
+      const { description, plural } = only.profile;
+      lines.push(
+        `This repo records ${description !== undefined ? `${description} as ${plural}` : plural}. Each collection below has an index with one line per ${recordNoun(only.profile)}:`,
+        shape,
+      );
+    } else {
+      lines.push(
+        "This repo keeps an index for each collection of records below, with one line per record:",
+        `${shape}${withStatus && withStatus < types.length ? " Types without a status leave it out." : ""}`,
+      );
+    }
+    lines.push("");
+    for (const { c, count, stale } of listed) {
+      lines.push(`- ${c.indexFile ?? ""} (${recordCount(c.profile, count)}${stale ? ", out of date" : ""})`);
+    }
+    lines.push(
+      "",
+      `Before changing an area, grep the ${listed.length === 1 ? "index" : "indexes"} for its terms and open the ${only ? only.profile.plural : "records"} whose lines match.`,
+    );
+    for (const c of types) if (c.profile.guidance !== undefined) lines.push(c.profile.guidance);
+    if (listed.some((l) => l.stale)) lines.push(`To bring an out-of-date index up to date, run: node "${CLI_PATH}" reindex`);
+    lines.push(`The card-catalog CLI is node "${CLI_PATH}" (list, preview, profile, validate; add --help).`);
+  }
+  if (orphans.length) lines.push(`Orphaned indexes, which no collection maintains any more: ${orphans.join(", ")}`);
   return lines.join("\n");
 }
 
 async function main(): Promise<void> {
-  const raw = await readStdin();
-  const input = (raw.trim() ? JSON.parse(raw) : {}) as HookInput;
-  const root = process.env["CLAUDE_PROJECT_DIR"] ?? input.cwd ?? process.cwd();
-
-  const dirs = findAdrDirs(root).map((dir) => {
-    const { index } = buildIndex(dir);
-    return { dir: relative(root, dir) || ".", count: index.adrs.length, current: indexIsCurrent(dir, index) };
-  });
-  const text = pointerText(dirs);
+  const input = await readHookInput();
+  const text = sessionStartMessage(process.env["CLAUDE_PROJECT_DIR"] ?? input.cwd ?? process.cwd());
   if (!text) return;
-
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: text },
-    }),
-  );
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: text } }));
 }
 
-main()
-  .catch((err: unknown) => {
-    console.error(`[card-catalog] session-start skipped: ${err instanceof Error ? err.message : String(err)}`);
-  })
-  .finally(() => {
-    process.exitCode = 0;
-  });
+runHook("session-start", main);

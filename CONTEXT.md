@@ -29,6 +29,11 @@ may sit in subdirectories. When collections nest, a record belongs to the
 innermost one.
 _Avoid_: folder, record set
 
+**Collection setting**:
+A choice made for one collection rather than for its record type, such as
+where its index goes or whether it is announced.
+_Avoid_: collection option
+
 **Link**:
 A typed reference from one record to another, such as superseded-by or
 implements, naming its target by label. It may point into another collection.
@@ -54,9 +59,21 @@ One record's line in an index: its label, status (if its record type has
 one), date amended, extra fields, title and summary.
 _Avoid_: entry, row
 
+**ID**:
+The part of a record's name that is unique within its collection, such as
+`0003` or `2026-09-14-db-outage`.
+_Avoid_: number, key
+
+**Series**:
+A numbered sequence of records within one collection, marked by a filename
+prefix, such as records imported from another repo. Numbers are unique only
+within a series.
+_Avoid_: prefix, namespace
+
 **Label**:
-How an index line names a record, such as `ADR-0003` or
-`Postmortem 2026-09-14-db-outage`.
+How index lines and links name a record, built from its ID, such as
+`ADR-0003` or `Postmortem 2026-09-14-db-outage`. Unique within its
+collection, not across the repo.
 
 **Orphaned index**:
 An index left behind in a directory that is no longer a collection.

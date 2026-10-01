@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "card-catalog config",
+  "description": "card-catalog.json at the repo root: which directories are collections of records, and how to read them. See docs/specs/config.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "defaults": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether every docs/adr and doc/adr directory is a default collection of ADRs."
+    },
+    "ignoreFiles": {
+      "type": "array",
+      "description": "Extra ignore files in gitignore syntax, as repo-relative paths.",
+      "items": { "$ref": "#/$defs/relativePath" }
+    },
+    "collections": {
+      "type": "array",
+      "description": "Config entries: directories and the record type of the collections there.",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "not": { "pattern": "(^/)|(^[A-Za-z]:[\\\\/])|(^|/)\\.\\.(/|$)" }
+    },
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "source": {
+      "type": "string",
+      "pattern": "^(frontmatter:[A-Za-z0-9_][A-Za-z0-9_.-]*|(inline|section):\\S.*|heading|lead|quote)$"
+    },
+    "sources": {
+      "oneOf": [
+        { "$ref": "#/$defs/source" },
+        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/source" } }
+      ]
+    },
+    "linkSource": {
+      "type": "string",
+      "pattern": "^(frontmatter:[A-Za-z0-9_][A-Za-z0-9_.-]*|(inline|section|status):\\S.*|heading|lead|quote)$"
+    },
+    "linkSources": {
+      "oneOf": [
+        { "$ref": "#/$defs/linkSource" },
+        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/linkSource" } }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "required": ["dir", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "dir": {
+          "allOf": [{ "$ref": "#/$defs/relativePath" }],
+          "description": "A repo-relative directory path or glob (*, **, ?, [...])."
+        },
+        "type": {
+          "allOf": [{ "$ref": "#/$defs/name" }],
+          "description": "A record type: a built-in type (adr) or any other name, which defines a user-defined type."
+        },
+        "indexPath": {
+          "type": "string",
+          "pattern": "^(none|[^/].*\\.md)$",
+          "default": "INDEX.md",
+          "description": "Collection setting: the index path relative to the collection directory, or \"none\"."
+        },
+        "announce": {
+          "type": "boolean",
+          "default": true,
+          "description": "Collection setting: whether the session-start message points agents at this collection's index."
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Collection setting: globs for files that are never records here. Adds to the profile's exclude."
+        },
+        "name": { "type": "string", "minLength": 1, "description": "Display name, used in labels and headings." },
+        "plural": { "type": "string", "minLength": 1, "description": "Plural used in sentences." },
+        "description": { "type": "string", "minLength": 1, "description": "What the records are, for the session-start intro." },
+        "match": { "type": "string", "minLength": 1, "description": "Glob for candidate files, relative to the collection directory." },
+        "id": {
+          "type": "string",
+          "pattern": "^(frontmatter:[A-Za-z0-9_][A-Za-z0-9_.-]*|.*\\{(number|series|date|slug|dir)\\}.*)$",
+          "description": "An ID pattern such as [{series}-]{number} or {date}-{slug}, or a frontmatter:<key> source."
+        },
+        "title": { "$ref": "#/$defs/sources" },
+        "summary": { "$ref": "#/$defs/sources" },
+        "date": { "$ref": "#/$defs/sources" },
+        "tags": { "$ref": "#/$defs/sources" },
+        "status": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["from", "values"],
+              "additionalProperties": false,
+              "properties": {
+                "from": { "$ref": "#/$defs/sources" },
+                "values": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "additionalProperties": { "type": "string", "minLength": 1 }
+                },
+                "showLink": {
+                  "type": "object",
+                  "additionalProperties": { "$ref": "#/$defs/name" }
+                }
+              }
+            }
+          ]
+        },
+        "links": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/name" },
+          "additionalProperties": { "$ref": "#/$defs/linkSources" }
+        },
+        "fields": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/name" },
+          "additionalProperties": { "$ref": "#/$defs/sources" }
+        },
+        "label": {
+          "type": "string",
+          "pattern": "^(?=.*\\{id\\})([^{}]|\\{name\\}|\\{id\\})*$",
+          "description": "Label template over {name} and {id}."
+        },
+        "guidance": { "type": "string", "minLength": 1, "description": "A sentence the session-start message adds for this type." }
+      }
+    }
+  }
+}

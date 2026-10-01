@@ -47,7 +47,13 @@ An ignored path is one excluded by any of:
   are skipped, and `validate` notes each one.
 
 Config can't override this. To index a directory an ignore file hides, edit
-the ignore file: it is the single record of what agents may see. `validate`
+the ignore file: it is the single record of what agents may see.
+
+**A symlink is ignored if its target is.** card-catalog follows symlinked
+files and directories, but a path counts as ignored if either the link or
+what it resolves to is ignored, and a target outside the repo is never
+indexed. Otherwise a symlink would carry hidden content into an index.
+(Added 2026-10-01.) `validate`
 reports any config entry that is ignored, so an operator can see why it
 isn't indexed.
 

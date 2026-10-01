@@ -1,5 +1,5 @@
 {
-  "description": "Re-index ADRs after they are written; point the agent at the ADR index at session start.",
+  "description": "Re-index a collection after one of its records is written; point the agent at each collection's index at session start.",
   "hooks": {
     "PostToolUse": [
       {
