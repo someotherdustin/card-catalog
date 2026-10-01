@@ -65,7 +65,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((err: unknown) => {
-    console.error(`[adr-index] session-start skipped: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`[card-catalog] session-start skipped: ${err instanceof Error ? err.message : String(err)}`);
   })
   .finally(() => {
     process.exitCode = 0;

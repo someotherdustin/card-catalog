@@ -29,13 +29,13 @@ async function main(): Promise<void> {
   if (!adrDir) return;
 
   const { changed, count, warnings } = refreshIndex(adrDir);
-  for (const w of warnings) console.error(`[adr-index] warning: ${w}`);
-  if (changed) console.error(`[adr-index] indexed ${String(count)} ADR(s) in ${adrDir}`);
+  for (const w of warnings) console.error(`[card-catalog] warning: ${w}`);
+  if (changed) console.error(`[card-catalog] indexed ${String(count)} ADR(s) in ${adrDir}`);
 }
 
 main()
   .catch((err: unknown) => {
-    console.error(`[adr-index] skipped: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`[card-catalog] skipped: ${err instanceof Error ? err.message : String(err)}`);
   })
   .finally(() => {
     process.exitCode = 0;

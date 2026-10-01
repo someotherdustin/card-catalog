@@ -23,5 +23,5 @@
     "noUnusedParameters": true,
     "useUnknownInCatchVariables": true
   },
-  "include": ["adr-index-plugin/scripts", "adr-index-plugin/test"]
+  "include": ["card-catalog-plugin/scripts", "card-catalog-plugin/test"]
 }

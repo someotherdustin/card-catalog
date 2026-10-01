@@ -33,6 +33,6 @@ jobs:
       - run: npm test
       - name: Validate JSON manifests
         run: |
-          for f in .claude-plugin/marketplace.json adr-index-plugin/.claude-plugin/plugin.json adr-index-plugin/hooks/hooks.json; do
+          for f in .claude-plugin/marketplace.json card-catalog-plugin/.claude-plugin/plugin.json card-catalog-plugin/hooks/hooks.json; do
             node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" && echo "ok: $f"
           done

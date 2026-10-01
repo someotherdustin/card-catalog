@@ -1,24 +1,35 @@
-# adr-manager
+# card-catalog
 
-Companion for ADR management in agentic workflows.
+A card catalog for the markdown records in your repo: one line per record,
+pointing to where it's shelved.
 
 ADRs written by coding agents (via `grill-with-docs` / `domain-modeling` from
 [mattpocock/skills](https://github.com/mattpocock/skills)) pile up as flat
-markdown files. This repo doesn't replace that write path. It adds a
-hook-only Claude Code plugin, **`adr-index`**, that runs *after* an ADR is
-written and keeps an `INDEX.md` next to it: one line per ADR with its ID,
-status, title and a one-line summary. An agent checks prior decisions by
-grepping the index, then opens only the ADRs whose lines match.
+markdown files. card-catalog doesn't replace that write path. It's a
+hook-only Claude Code plugin that runs *after* an ADR is written and keeps an
+`INDEX.md` next to it: one line per ADR with its ID, status, title and a
+one-line summary. An agent checks prior decisions by grepping the index, then
+opens only the ADRs whose lines match.
+
+Today it indexes ADRs only.
+[ADR-0001](docs/adr/0001-generalize-to-record-collections.md) proposes
+extending it to other records that pile up the same way: RFCs, specs,
+runbooks, postmortems.
 
 ## Install
 
 ```
-/plugin marketplace add someotherdustin/adr-manager
-/plugin install adr-index@adr-manager
+/plugin marketplace add someotherdustin/card-catalog
+/plugin install card-catalog@card-catalog
 ```
 
 Requires Node ≥ 22.18. The scripts are TypeScript run directly by Node's
 built-in type stripping, so there's no build step and no runtime dependencies.
+
+**Upgrading from `adr-index`.** Before 0.3.0 the plugin was `adr-index` in
+the `adr-manager` marketplace. Uninstall it, then install as above. Existing
+`INDEX.md` and `index.json` files keep working and pick up the new name the
+next time they're written.
 
 ## What it does
 
@@ -77,7 +88,7 @@ per line so git diffs stay readable; expanded, an entry looks like this:
 ```json
 {
   "version": 2,
-  "generatedBy": "adr-index",
+  "generatedBy": "card-catalog",
   "adrs": [
     {
       "id": 3,
@@ -103,14 +114,17 @@ would make every ADR look freshly amended in every clone. So:
   same. Line-ending and trailing-whitespace changes don't count.
 - If the hash differs, `amendedAt` becomes the current time.
 - If the index has no hash for the file yet (a backfill, or an index from
-  plugin 0.1), `amendedAt` is the file's last commit date. For a file git
+  `adr-index` 0.1), `amendedAt` is the file's last commit date. For a file git
   doesn't track yet, it's the current time.
 
 Commit `INDEX.md` and `index.json` alongside the ADRs so these timestamps
 carry across clones. `INDEX.md` shows the date on each ADR's line.
 
-To index ADRs that existed before the plugin was installed, or to repair an index:
-`node adr-index-plugin/scripts/reindex.ts [repo-root]`.
+To index ADRs that existed before the plugin was installed, or to repair an
+index, run `reindex.ts [repo-root]` from the plugin's `scripts/` directory.
+You don't need to find it yourself: when an index is out of date, the
+session-start message includes the full command. In a clone of this repo,
+`npm run reindex` does the same.
 
 ### Parsing rules (lenient)
 
@@ -143,7 +157,7 @@ an explicit `hub-0042` in the text counts, and a bare `ADR-0042` means the
 same series as the ADR being parsed, because that's how an imported series
 referred to itself.
 
-## Findings from mattpocock/skills (the brief's open items)
+## How it fits mattpocock/skills
 
 - **ADR directory is a convention, not a setting.** `setup-matt-pocock-skills`
   doesn't ask for an ADR path. It writes `docs/agents/domain.md`, which

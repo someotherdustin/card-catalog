@@ -1,0 +1,8 @@
+{
+  "name": "card-catalog",
+  "version": "0.3.0",
+  "description": "Indexes ADRs into a grep-able INDEX.md after they are written, so agents can check prior decisions without loading every ADR body.",
+  "author": { "name": "someotherdustin" },
+  "license": "MIT",
+  "keywords": ["adr", "architecture-decision-records", "index", "hooks"]
+}

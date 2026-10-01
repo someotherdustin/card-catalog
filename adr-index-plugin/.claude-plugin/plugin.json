@@ -1,8 +1,0 @@
-{
-  "name": "adr-index",
-  "version": "0.2.0",
-  "description": "Companion to grill-with-docs / domain-modeling: indexes ADRs into docs/adr/index.json after they are written, so agents can check prior decisions without loading every ADR body.",
-  "author": { "name": "someotherdustin" },
-  "license": "MIT",
-  "keywords": ["adr", "architecture-decision-records", "hooks"]
-}

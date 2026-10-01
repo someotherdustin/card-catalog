@@ -1,5 +1,5 @@
 {
-  "name": "adr-index-plugin",
+  "name": "card-catalog-plugin",
   "private": true,
   "type": "module",
   "engines": { "node": ">=22.18" }
