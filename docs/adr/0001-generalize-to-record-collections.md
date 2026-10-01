@@ -91,6 +91,13 @@ how to read its records:
 - `indexPath`: where the index is written, or `none`;
 - `announce`: whether SessionStart tells agents about the collection.
 
+> **Amended 2026-10-01:** `indexPath` and `announce` are collection
+> settings, not profile fields, and a collection can add to its profile's
+> `exclude`. Collections of one type can then differ in where their index
+> goes, whether they're announced and which local files they skip, while
+> the type keeps exactly one profile.
+> [docs/specs/config.md](../specs/config.md#collection-settings) has the details.
+
 Styles of one type don't need profiles of their own: the `adr` profile reads
 mattpocock, Nygard, MADR and adr-tools ADRs through its fallback chains.
 When collections nest, a record belongs to the innermost one.
@@ -174,6 +181,11 @@ plugin bundles its own copy, so hooks never need the network. A Claude Code
 plugin can't locate another plugin's files, so helpers call
 `npx card-catalog`, falling back to the local CLI path that the session-start
 message gives.
+
+> **Amended 2026-10-01:** Node doesn't strip types from files under
+> `node_modules`, so the npm package is the core and CLI compiled to
+> JavaScript when a version tag is pushed. Compiled output is never
+> committed, and the plugin and the repo still have no build step.
 
 ### 5. Indexes have a single writer
 

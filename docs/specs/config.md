@@ -51,8 +51,7 @@ directories and the record type of the collections there.
 |-----|----------|---------|
 | `dir` | yes | A repo-relative directory path or [glob](#directory-globs). |
 | `type` | yes | A record type name: `^[a-z][a-z0-9-]*$`. |
-| `indexPath` | no | Where `INDEX.md` goes. See [Collection settings](#collection-settings). |
-| `announce` | no | Whether the session-start message lists the collection. |
+| `indexPath`, `announce`, `exclude` | no | [Collection settings](#collection-settings). |
 | any profile field | no | Defines or overrides the type's profile. See [profiles.md](profiles.md). |
 
 An entry with any other key is a `config-invalid` error.
@@ -77,22 +76,23 @@ entry's fields.
 
 ### Collection settings
 
-`indexPath` and `announce` belong to a collection, not to its type, so they
-may differ between entries of the same type. That lets one ADR directory stay
-out of the session-start message without changing how ADRs are read.
+Collection settings belong to a collection, not to its type, so they may
+differ between entries of the same type. That lets one ADR directory stay
+out of the session-start message, or skip a template file, without changing
+how ADRs are read everywhere.
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
 | `indexPath` | `"INDEX.md"` | Path of the index file, relative to the collection directory, ending in `.md`. `"none"` writes no index and no `index.json`. |
 | `announce` | `true` | Whether the session-start message points agents at this collection's index. |
+| `exclude` | `[]` | Globs for files that are never records in this collection. They add to the profile's `exclude`, never replace it. |
 
 `indexPath` may point outside the collection directory (`"../postmortems.md"`)
 but must stay inside the repo. It must not resolve to a record, or to the
 index of another collection. Either is an `index-conflict` error.
 
-> ADR-0001 §2 lists `indexPath` and `announce` among the profile fields. This
-> spec treats them as collection settings, so "one profile per type" doesn't
-> stop per-directory choices. The meaning of each is unchanged.
+ADR-0001 §2 first listed `indexPath` and `announce` as profile fields. Its
+amendment note records the move.
 
 ## Directory globs
 
@@ -109,8 +109,8 @@ absolute or contain `..`. A trailing `/` is ignored.
 While expanding `*` or `**`, card-catalog doesn't descend into
 `node_modules`, `dist`, `build`, `target`, `vendor` or any directory whose
 name starts with `.`, unless the glob names that directory literally. It
-doesn't descend into ignored directories either (see
-[ignored-paths.md](ignored-paths.md)).
+doesn't descend into ignored directories (see
+[ignored-paths.md](ignored-paths.md)) or [nested repos](#nested-repos).
 
 ## Default collections
 
@@ -134,6 +134,14 @@ For each directory, the first rule that applies decides its collection:
 
 Two entries with the same literal `dir` are a `config-duplicate` error; the
 first wins.
+
+### Nested repos
+
+A directory containing `.git` (a directory or a file, as in a submodule or
+worktree) below the repo root is a separate repo. Discovery, glob expansion
+and orphan scans never enter it, and a config entry can't name a directory
+inside it. It's indexed when someone works in it as its own repo, under its
+own config.
 
 ### Nesting
 

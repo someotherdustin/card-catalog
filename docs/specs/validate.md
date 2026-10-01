@@ -45,20 +45,23 @@ config entry or rule that refers to one.
 | `duplicate-id` | error | Two records in one collection have the same ID. |
 | `no-summary` | warning | No summary source yields a value. |
 | `unknown-status` | warning | The raw status matches no key in the profile's `values`. |
-| `no-supersede-target` | warning | The status is `superseded` and there's no `superseded-by` link. |
+| `missing-status-link` | warning | The profile's `showLink` names a link type for the record's status, and the record has no such link (a `superseded` ADR that doesn't say what replaced it). |
 | `broken-link` | warning | A link target looks like a label of a known type but no record has it, or a link's file doesn't exist. |
+| `ambiguous-link` | warning | A link target's label belongs to records in more than one other collection. |
+| `symlink-outside-repo` | note | A record or collection path is a symlink whose target is outside the repo, so it isn't indexed. |
 | `not-a-record` | note | A file matches `match` but not the `id` pattern, and isn't excluded. |
 | `empty-collection` | note | A collection has no records. |
 
 A link target that doesn't look like any known type's label is free text,
-so `broken-link` doesn't apply to it.
+so `broken-link` doesn't apply to it. See
+[profiles.md](profiles.md#links) for how labels are looked up.
 
 ## Indexes
 
 | Code | Severity | When |
 |------|----------|------|
 | `stale-index` | error | A collection's `INDEX.md` or `index.json` differs from what a rebuild would write. See [index-format.md](index-format.md#current-and-stale-indexes). |
-| `missing-index` | error | A collection with records and an `indexPath` has no index yet. |
+| `missing-index` | error | A collection with records and an `indexPath` has no index yet. A collection with no records needs none. |
 | `newer-index` | error | An `index.json` has a version above the one this card-catalog writes. |
 | `orphaned-index` | error | A card-catalog index outside an ignored path that no collection writes. |
 
@@ -83,4 +86,5 @@ in the message:
 | `orphaned-index` | Delete the file, or make its directory a collection again |
 | `config-ignored` | Edit the named ignore file, or remove the entry |
 | `type-conflict` | Keep the profile fields on one entry only |
-| `no-supersede-target` | Add the replacing record's label to the status |
+| `missing-status-link` | Add the link, such as the replacing record's label in the status |
+| `ambiguous-link` | Link to the record's file instead of naming its label |

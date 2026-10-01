@@ -9,6 +9,12 @@ node <plugin>/scripts/cli.ts <command> [options]
 ```
 
 The npm package `card-catalog` and the plugin carry the same version. The
+plugin runs its TypeScript directly, with no build step. Node doesn't strip
+types under `node_modules`, so the npm package holds the same core and CLI
+compiled to JavaScript at publish time; compiled output is never committed.
+Pushing a `v*` tag runs a workflow that checks the tag, `package.json` and
+the plugin manifest carry the same version, compiles, and publishes with
+npm provenance. The
 plugin's `scripts/reindex.ts [root]` stays as a shortcut for
 `reindex --root <root>`, because earlier READMEs and session-start messages
 gave it.
@@ -73,8 +79,9 @@ orphaned index: old/INDEX.md
 - `config` is `null` without a config file.
 - `source` is `"default"` or `"config"`; `entry` is the entry's position in
   `collections`, counting from 1 as human output does, or `null`.
-- `state` is `"current"`, `"stale"`, `"missing"` (no index written yet) or
-  `"none"` (`indexPath: "none"`).
+- `state` is `"current"`, `"stale"`, `"missing"` (records but no index
+  yet), `"empty"` (no records and no index) or `"none"`
+  (`indexPath: "none"`).
 - `reason` is `"ignored"` (with the source in `detail`) or `"no-match"`.
 
 Ignored directories that no config entry names and no default would have

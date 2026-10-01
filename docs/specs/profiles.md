@@ -11,8 +11,9 @@ model.
 |-------|------|---------|
 | `name` | string | Display name, used in labels and headings: `ADR`, `Postmortem`. |
 | `plural` | string | Plural used in sentences: `ADRs`, `postmortems`. |
+| `description` | string | What the records are, for the session-start intro: `architecture decisions`. |
 | `match` | glob | Which files in the collection directory are candidates. |
-| `exclude` | glob[] | Candidates that are never records. |
+| `exclude` | glob[] | Candidates that are never records. A collection can [add to it](config.md#collection-settings). |
 | `id` | ID pattern or source | Where the ID comes from. See [IDs](#ids). |
 | `title` | sources | Where the title comes from. |
 | `summary` | sources | Where the one-line summary comes from. |
@@ -134,6 +135,9 @@ uses `ADR-{id}`, giving `ADR-0007`.
 A record in a series is labelled by its ID alone (`hub-0023`), because the
 series already names where it came from.
 
+Labels are unique within a collection, not across the repo. Two ADR
+directories in one repo can both have an `ADR-0003`.
+
 ## Status
 
 `status` is `null` for a type with no lifecycle. Records of that type have
@@ -142,12 +146,16 @@ no status, and their index lines show none. Otherwise it's an object:
 ```json
 {
   "from": ["frontmatter:status", "section:Status", "inline:Status"],
-  "values": { "draft": "proposed", "proposed": "proposed", "accepted": "accepted" }
+  "values": { "draft": "proposed", "proposed": "proposed", "superseded": "superseded" },
+  "showLink": { "superseded": "superseded-by" }
 }
 ```
 
 `from` lists the sources of the raw status text. `values` maps raw words to
-the type's vocabulary. The raw text is cleaned and lowercased, and the
+the type's vocabulary. `showLink`, which is optional, maps a status to a
+link type: a record with that status and that link shows the link in its
+status, as `[superseded by ADR-0009]`. See
+[index-format.md](index-format.md#index-lines). The raw text is cleaned and lowercased, and the
 longest key it starts with decides the status, so
 `Accepted (2026-03-01)` is `accepted`. If no key matches, the status is
 `unspecified` and `validate` warns `unknown-status`. If there's no raw text,
@@ -176,22 +184,33 @@ label:
    file is in a known collection, the target is that record's label.
    Otherwise it's the link text. The link's path is kept too.
 2. Text matching the profile's label, such as `ADR-42` or `ADR-0042`,
-   names the record with that ID. In a series record, a reference without a
+   is normalized to that label. In a series record, a reference without a
    series means the same series (`ADR-0042` inside `hub-0031` is
    `hub-0042`), because that's how the series referred to itself before it
    was imported.
 3. Text matching the ID pattern directly, such as `hub-0042` or a bare
-   `42`, names that ID, with the same series rule.
-4. Anything else is kept verbatim as the target. That's how a link names a
-   record in a collection of another type: `Postmortem 2026-09-14-db-outage`.
+   `42`, is normalized the same way.
+4. Anything else is kept verbatim. That's how a link names a record of
+   another type: `Postmortem 2026-09-14-db-outage`.
 
 For `status:<value>` sources, rules 2 and 3 take the first match in the
 text, so `Superseded by ADR-0009 (2026-04-01)` targets `ADR-0009`.
 
-When a record's status is `superseded` and it has a `superseded-by` link,
-the index line shows the link in the status
-(`[superseded by ADR-0009]`). Every other link is shown as a `key=value`
-pair. See [index-format.md](index-format.md#index-lines).
+A target found as text is then looked up by label, because labels are
+unique only within a collection:
+
+- in the linking record's own collection first;
+- if no record there has the label, in every collection.
+
+Exactly one match resolves the link, and its file is kept. More than one is
+`ambiguous-link`, and none is `broken-link` if the target looks like a
+label of a known type (both warnings). Either way the target is kept as
+written. A file link is the way to name one of several same-labelled
+records exactly.
+
+A link shown in the status through `showLink` isn't repeated on the line.
+Every other link is shown as a `key=value` pair. See
+[index-format.md](index-format.md#index-lines).
 
 ## Fields
 
@@ -210,6 +229,7 @@ A user-defined type starts from these values:
 |-------|---------|
 | `name` | The type name with its first letter uppercased: `postmortem` → `Postmortem` |
 | `plural` | `name` + `s` if `name` is all capitals (`RFCs`), else lowercased `name` + `s` (`postmortems`) |
+| `description` | none |
 | `match` | `*.md` |
 | `exclude` | `["README.md", "INDEX.md"]` |
 | `id` | `{slug}` |
@@ -241,6 +261,7 @@ through its fallback chains. It's equivalent to:
 {
   "name": "ADR",
   "plural": "ADRs",
+  "description": "architecture decisions",
   "match": "*.md",
   "exclude": ["README.md", "INDEX.md"],
   "id": "[{series}-]{number}",
@@ -254,7 +275,8 @@ through its fallback chains. It's equivalent to:
     "values": {
       "draft": "proposed", "proposed": "proposed", "accepted": "accepted",
       "rejected": "rejected", "deprecated": "deprecated", "superseded": "superseded"
-    }
+    },
+    "showLink": { "superseded": "superseded-by" }
   },
   "links": {
     "supersedes": "frontmatter:supersedes",
@@ -278,3 +300,8 @@ which now show as `key=value` pairs.
 
 A built-in profile is added when a real collection needs one, with fixtures
 taken from that collection. It doesn't need an ADR.
+
+A config entry that already uses the new type's name starts building on the
+built-in profile from that release, so fields it left to the generic
+defaults change. Each release that adds a built-in type says so in its
+changelog, and `card-catalog profile` shows where every field comes from.

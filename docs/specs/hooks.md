@@ -50,7 +50,7 @@ to list, no orphaned indexes and a valid config, it prints nothing.
 
 ```
 This repo keeps an index for each collection of records below, with one line per record:
-ID, status, date amended, title and a one-line summary. Types without a status leave it out.
+label, status, date amended, title and a one-line summary. Types without a status leave it out.
 
 - docs/adr/INDEX.md (67 ADRs)
 - docs/postmortems/INDEX.md (12 postmortems, out of date)
@@ -64,9 +64,11 @@ The card-catalog CLI is node "<cli>" (list, preview, profile, validate; add --he
 
 - **First line.** When every listed collection is of one type, the first two
   lines name it instead:
-  `This repo records {plural} in the collections below. Each has an index with one line per {noun}:`
-  then `ID, status, date amended, title and a one-line summary.`, leaving
-  out `status, ` for a type without one.
+  `This repo records {description} as {plural}. Each collection below has an index with one line per {noun}:`
+  then `label, status, date amended, title and a one-line summary.`, leaving
+  out `status, ` for a type without one. Without a `description`, the first
+  line starts `This repo records {plural}.` A message listing several types
+  uses the generic first lines, whatever their descriptions.
 - **Collection lines.** One per listed collection, in path order:
   the index path, the record count with the type's `plural` (or its `name`
   when the count is 1), and `, out of date` when the index is stale.

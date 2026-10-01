@@ -22,6 +22,15 @@ containing it, up to the repo root. Ignored paths are left out everywhere:
 Config can't override this. To index something an ignore file hides, edit
 the ignore file.
 
+## Symlinks
+
+card-catalog follows symlinked files and directories, but a path counts as
+ignored if either the link or the path it resolves to is ignored. A symlink
+whose target is outside the repo is never indexed, and `validate` notes it
+as `symlink-outside-repo`. So a symlink can't carry a hidden file into an
+index, which matches how Claude Code applies deny rules to symlink targets.
+A monorepo that links a shared ADR directory into each service still works.
+
 ## Sources
 
 ### Git
