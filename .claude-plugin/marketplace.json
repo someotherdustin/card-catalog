@@ -1,16 +1,16 @@
 {
-  "name": "adr-manager",
+  "name": "card-catalog",
   "owner": {
     "name": "someotherdustin"
   },
   "metadata": {
-    "description": "Companion plugins for ADR management in agentic workflows."
+    "description": "Grep-able indexes of the markdown records that pile up in a repo, for agents and operators alike."
   },
   "plugins": [
     {
-      "name": "adr-index",
-      "source": "./adr-index-plugin",
-      "description": "Keeps a compact index.json of ADRs (title, status, one-line summary) in sync as agents write them."
+      "name": "card-catalog",
+      "source": "./card-catalog-plugin",
+      "description": "Keeps a one-line-per-record INDEX.md next to each ADR directory in sync as records are written, so agents can check prior decisions by grepping it."
     }
   ]
 }

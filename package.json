@@ -1,5 +1,5 @@
 {
-  "name": "adr-manager",
+  "name": "card-catalog",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,9 +8,9 @@
   "scripts": {
     "lint": "eslint --max-warnings=0 .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test adr-index-plugin/test/*.test.ts",
+    "test": "node --test card-catalog-plugin/test/*.test.ts",
     "check": "npm run lint && npm run typecheck && npm test",
-    "reindex": "node adr-index-plugin/scripts/reindex.ts",
+    "reindex": "node card-catalog-plugin/scripts/reindex.ts",
     "prepare": "husky"
   },
   "devDependencies": {

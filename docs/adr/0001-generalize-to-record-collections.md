@@ -218,5 +218,9 @@ Names are open (see Follow-ups).
 - Which built-in profiles ship after ADRs.
 - Whether the plugin writes records for types that have no upstream skill
   producing them, or stays manage-only as it is for ADRs.
-- New names for the repo and the two plugins.
+- ~~New names for the repo and the two plugins.~~ Decided 2026-10-01:
+  `card-catalog` for the repo, the marketplace and the indexing plugin, and
+  `card-catalog-helpers` for the helpers plugin. A library card catalog has
+  one card per item and each card points to where the item is shelved,
+  which is what an index line does.
 - Whether to add an MCP server as a further front-end.
