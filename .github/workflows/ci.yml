@@ -31,8 +31,12 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: Build the npm package
+        run: npm run build:npm && node npm/dist/cli.js --version
+      - name: Validate this repo's own indexes
+        run: node card-catalog-plugin/scripts/cli.ts validate
       - name: Validate JSON manifests
         run: |
-          for f in .claude-plugin/marketplace.json card-catalog-plugin/.claude-plugin/plugin.json card-catalog-plugin/hooks/hooks.json; do
+          for f in .claude-plugin/marketplace.json card-catalog-plugin/.claude-plugin/plugin.json card-catalog-plugin/hooks/hooks.json card-catalog-plugin/card-catalog.schema.json npm/package.json; do
             node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" && echo "ok: $f"
           done

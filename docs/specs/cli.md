@@ -98,7 +98,7 @@ unchanged: docs/postmortems (12 postmortems)
 ```
 
 Exits 1 if the config is invalid, a named directory isn't a collection, or
-a write fails. Parse warnings don't change the exit code. A collection whose
+a write fails. Named directories are checked before anything is written. Parse warnings don't change the exit code. A collection whose
 `index.json` is newer than this version supports is skipped with a warning.
 
 `--json`: `{ "collections": [{ "dir", "type", "records", "changed" }], "warnings": [] }`.
@@ -155,7 +155,9 @@ docs/postmortems: postmortem (config entry 3)
 ```
 
 `--json`:
-`{ "dir", "type", "profile": { <field>: value }, "settings": { "indexPath", "announce" }, "sources": { <field>: "built-in" | "config entry <n>" | "generic default" } }`.
+`{ "dir", "type", "profile": { <field>: value }, "settings": { "indexPath", "announce", "exclude" }, "sources": { <field>: "built-in" | "config entry <n>" | "generic default" | "--entry" }, "settingSources": { <setting>: "config entry <n>" | "default" | "--entry" } }`.
+Settings have their own sources because `exclude` is both a profile field
+and a collection setting.
 
 A `<dir>` that isn't a collection, without `--type` or `--entry`, exits 1
 with the reason (`not a collection`, or why not, as in `list`).

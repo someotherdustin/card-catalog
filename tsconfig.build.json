@@ -1,0 +1,13 @@
+{
+  // Compiles the core and CLI to JavaScript for the npm package. Node doesn't
+  // strip types under node_modules, so the package can't ship the .ts files
+  // the plugin runs directly. Output is never committed.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": "card-catalog-plugin/scripts",
+    "outDir": "npm/dist"
+  },
+  "include": ["card-catalog-plugin/scripts/cli.ts", "card-catalog-plugin/scripts/core"]
+}

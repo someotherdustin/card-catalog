@@ -68,10 +68,15 @@ The card-catalog CLI is node "<cli>" (list, preview, profile, validate; add --he
   then `label, status, date amended, title and a one-line summary.`, leaving
   out `status, ` for a type without one. Without a `description`, the first
   line starts `This repo records {plural}.` A message listing several types
-  uses the generic first lines, whatever their descriptions.
+  uses the generic first lines, whatever their descriptions. Their second
+  line adds `Types without a status leave it out.` only when some listed
+  types have a status and some don't.
 - **Collection lines.** One per listed collection, in path order:
-  the index path, the record count with the type's `plural` (or its `name`
-  when the count is 1), and `, out of date` when the index is stale.
+  the index path, the record count with the type's `plural` (or its
+  `{noun}`, as in [index-format.md](index-format.md#header), when the count
+  is 1), and `, out of date` when the index is stale or missing.
+- **Grep line.** It says `the index` when one collection is listed, and
+  names the type's `plural` instead of `records` when one type is.
 - **Guidance.** Each listed type's `guidance` sentence, once, in the order
   the types first appear in the list.
 - **Reindex line.** Only when some listed index is out of date.
