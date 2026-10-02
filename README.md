@@ -242,8 +242,11 @@ helpers live in `card-catalog-helpers/`: two skills, an agent, and
 
 The helpers' `claude plugin eval` suite costs API calls, so it isn't part of
 `npm test`. Run it before a release that changes the helpers, by hand or
-from the **Helper evals** workflow, which needs an `ANTHROPIC_API_KEY`
-secret. See [its README](card-catalog-helpers/evals/README.md).
+from the **Helper evals** workflow. The workflow authenticates to the Claude
+API through workload identity federation, with no API key secret: a Claude
+Console federation rule lets that workflow on `main` exchange its GitHub
+OIDC token for a short-lived token. See
+[its README](card-catalog-helpers/evals/README.md).
 
 The pre-commit hook runs `lint` and `typecheck` on the whole project and
 rejects the commit if either fails. `git commit --no-verify` skips it, so
