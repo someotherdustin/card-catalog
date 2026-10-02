@@ -240,12 +240,9 @@ dependency. The hooks and `scripts/cli.ts` are thin front-ends over it. The
 helpers live in `card-catalog-helpers/`: two skills, an agent, and
 `scripts/find-cli.ts`, which finds a CLI at the pinned version.
 
-The helpers' `claude plugin eval` suite costs API calls, so it isn't part of
-`npm test`. Run it before a release that changes the helpers, by hand or
-from the **Helper evals** workflow. The workflow authenticates to the Claude
-API through workload identity federation, with no API key secret: a Claude
-Console federation rule lets that workflow on `main` exchange its GitHub
-OIDC token for a short-lived token. See
+The helpers also have a `claude plugin eval` suite. It runs model sessions,
+so it isn't part of `npm test` or CI. Run it locally, where it uses your own
+Claude login, when you change a skill or the agent. See
 [its README](card-catalog-helpers/evals/README.md).
 
 The pre-commit hook runs `lint` and `typecheck` on the whole project and

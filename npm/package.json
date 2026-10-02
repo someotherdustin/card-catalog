@@ -4,7 +4,7 @@
   "description": "Grep-able indexes of the markdown records that pile up in a repo (ADRs, RFCs, runbooks, postmortems), for agents and operators alike.",
   "type": "module",
   "bin": { "card-catalog": "dist/cli.js" },
-  "files": ["dist", "card-catalog.schema.json", "README.md"],
+  "files": ["dist", "card-catalog.schema.json", "README.md", "LICENSE"],
   "engines": { "node": ">=22.18" },
   "license": "MIT",
   "author": "someotherdustin",

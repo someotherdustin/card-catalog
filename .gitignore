@@ -2,5 +2,6 @@ node_modules/
 *.tmp
 npm/dist/
 npm/README.md
+npm/LICENSE
 npm/card-catalog.schema.json
 card-catalog-helpers/evals/results/

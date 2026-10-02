@@ -1,10 +1,10 @@
 # Helper evals
 
 `claude plugin eval` suites for the `add-collection` and `records-doctor`
-skills and the `precedent-finder` agent. They cost API calls, so they run by
-hand, or from the manually started **Helper evals** workflow
-(`.github/workflows/evals.yml`), before a release that changes the helpers.
-See [helpers.md](../../docs/specs/helpers.md#testing).
+skills and the `precedent-finder` agent. They run model sessions, so they
+run by hand, locally, with your own Claude login, when a helper changes.
+They aren't part of CI or a release gate. See
+[helpers.md](../../docs/specs/helpers.md#testing).
 
 ## Running
 
