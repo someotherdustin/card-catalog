@@ -242,9 +242,8 @@ Releases before 0.5.0 have only a `v<version>` tag.
   by `npm test` with the rest of the repo.
 - The skills and the agent have `claude plugin eval` suites in
   `card-catalog-helpers/evals/`, using fixture repos built by each case's
-  scaffold script. They cost API calls, so they run by hand or from a
-  manually started workflow before a release that changes the helpers,
-  with a `--max-cost-usd` limit, never on every pull request. They run with
+  scaffold script. They run model sessions, so they run by hand, locally,
+  when a helper changes, never in CI and never as a release gate. They run with
   the repo root as the target, so each case can load both plugins and the
   core's hooks. A run can't ask the person anything, so a skill's approval
   step ends it: cases check the proposal and that nothing was written,
