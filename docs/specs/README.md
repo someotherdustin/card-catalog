@@ -20,6 +20,7 @@ Principle, the Guardrails) needs an ADR, not just a spec edit.
 | [hooks.md](hooks.md) | The write hook and the session-start message |
 | [cli.md](cli.md) | `card-catalog` commands, options, `--json` output and exit codes |
 | [validate.md](validate.md) | Every check `validate` runs, with its code and severity |
+| [helpers.md](helpers.md) | The `card-catalog-helpers` plugin: its skills and agent, finding the CLI, releases |
 
 ## Conventions
 

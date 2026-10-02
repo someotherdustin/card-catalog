@@ -80,9 +80,9 @@ The card-catalog CLI is node "<cli>" (list, preview, profile, validate; add --he
 - **Guidance.** Each listed type's `guidance` sentence, once, in the order
   the types first appear in the list.
 - **Reindex line.** Only when some listed index is out of date.
-- **CLI line.** Always, when anything is listed. Helper skills and agents
-  use this path when the npm CLI isn't available. `<cli>` is the
-  absolute path of the plugin's `scripts/cli.ts`.
+- **CLI line.** Always, when anything is listed. Helper skills try this
+  path before any other ([helpers.md](helpers.md#finding-the-cli)).
+  `<cli>` is the absolute path of the plugin's `scripts/cli.ts`.
 - **Orphaned indexes.** When any are found, a line
   `Orphaned indexes, which no collection maintains any more: <paths>`.
   Only files named `INDEX.md` or `index.json` are checked here.

@@ -1,8 +1,11 @@
 name: Release
 
 # Pushing a v* tag publishes the npm package: the core and CLI compiled to
-# JavaScript, since Node doesn't strip types under node_modules. The plugin
-# itself is published by the marketplace from the repo, at the same version.
+# JavaScript, since Node doesn't strip types under node_modules. The plugins
+# are published by the marketplace from the repo, at the same version. Once
+# the package is on npm, the workflow tags each plugin as <plugin>--v<version>,
+# the tags Claude Code resolves plugin dependencies against. Tagging comes
+# last, so card-catalog-helpers never pins an npm version that isn't published.
 
 on:
   push:
@@ -23,18 +26,35 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: npm
       - run: npm ci
-      - name: Check the tag, package.json, plugin.json and the CLI carry one version
+      - name: Check the tag, package.json, both plugin.json files, the helpers' pin and the CLI carry one version
         run: |
           tag="${GITHUB_REF_NAME#v}"
           for v in \
             "$(node -p "require('./npm/package.json').version")" \
             "$(node -p "require('./card-catalog-plugin/.claude-plugin/plugin.json').version")" \
+            "$(node -p "require('./card-catalog-helpers/.claude-plugin/plugin.json').version")" \
             "$(node card-catalog-plugin/scripts/cli.ts --version)"; do
             if [ "$v" != "$tag" ]; then echo "version $v doesn't match tag v$tag"; exit 1; fi
           done
+          pin="$(node -p "require('./card-catalog-helpers/.claude-plugin/plugin.json').dependencies.find((d) => d.name === 'card-catalog')?.version")"
+          if [ "$pin" != "=$tag" ]; then echo "card-catalog-helpers pins card-catalog at $pin, need =$tag"; exit 1; fi
       - run: npm run check
       - run: npm run build:npm
       # Trusted publishing (no token) needs npm 11.5.1 or later; Node 22 ships npm 10.
       - run: npm install -g npm@11
       - run: npm publish --provenance --access public
         working-directory: npm
+
+  tag-plugins:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the plugin tags
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag each plugin at this version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          git tag "card-catalog--v$version" "$GITHUB_SHA"
+          git tag "card-catalog-helpers--v$version" "$GITHUB_SHA"
+          git push --atomic origin "card-catalog--v$version" "card-catalog-helpers--v$version"

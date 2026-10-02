@@ -23,5 +23,5 @@
     "noUnusedParameters": true,
     "useUnknownInCatchVariables": true
   },
-  "include": ["card-catalog-plugin/scripts", "card-catalog-plugin/test"]
+  "include": ["card-catalog-plugin/scripts", "card-catalog-plugin/test", "card-catalog-helpers/scripts", "card-catalog-helpers/test"]
 }

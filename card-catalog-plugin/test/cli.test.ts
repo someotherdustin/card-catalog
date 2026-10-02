@@ -161,3 +161,15 @@ test("usage errors exit 2, and --version and --help work", () => {
   assert.match(cli(root, "--help").out, /^Usage: card-catalog <command>/m);
   assert.match(cli(root, "validate", "--help").out, /--strict/);
 });
+
+test("types lists the built-in record types", () => {
+  const root = makeRepo();
+  const r = cli(root, "types");
+  assert.equal(r.code, 0);
+  assert.equal(r.out, "adr  ADRs  architecture decisions\n");
+  assert.deepEqual(json(root, "types"), {
+    types: [{ name: "adr", plural: "ADRs", description: "architecture decisions" }],
+    warnings: [],
+  });
+  assert.equal(cli(root, "types", "docs").code, 2);
+});

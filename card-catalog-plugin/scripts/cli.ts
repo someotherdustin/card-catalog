@@ -15,7 +15,7 @@ import { buildIndex, type BuiltIndex, writeIndex } from "./core/index-build.ts";
 import { findOrphans } from "./core/orphans.ts";
 import { displayDir, findRepoRoot, isDirectory, repoRelative } from "./core/paths.ts";
 import type { Problem } from "./core/problems.ts";
-import { PROFILE_FIELDS, recordCount, resolveProfile } from "./core/profile.ts";
+import { BUILTIN_PROFILES, PROFILE_FIELDS, recordCount, resolveProfile } from "./core/profile.ts";
 import { openRepo, type Repo } from "./core/repo.ts";
 import { validate } from "./core/validate.ts";
 import { VERSION } from "./core/version.ts";
@@ -56,6 +56,7 @@ const COMMANDS: Record<string, { usage: string; summary: string; options: string
     options: ["--type", "--entry"],
     args: [1, 1],
   },
+  types: { usage: "types", summary: "List the built-in record types a config entry can name.", options: [], args: [0, 0] },
   validate: { usage: "validate [--strict]", summary: "Check config, records and indexes across the repo.", options: ["--strict"], args: [0, 0] },
 };
 
@@ -139,6 +140,7 @@ export function runCli(argv: string[], io: Io): number {
       case "reindex": return ctx.reindex();
       case "preview": return ctx.preview();
       case "profile": return ctx.profile();
+      case "types": return ctx.types();
       case "validate": return ctx.validate();
       default: return 2;
     }
@@ -333,6 +335,14 @@ class Context {
     this.emit([header, ...rows.map(row), "  settings:", ...settingRows.map(row)].join("\n"), {
       dir: c.dir, type: c.type, profile: c.profile, settings: c.settings, sources: c.profileSources, settingSources: c.settingSources,
     });
+    return 0;
+  }
+
+  types(): number {
+    const types = Object.entries(BUILTIN_PROFILES).map(([name, p]) => ({ name, plural: p.plural, description: p.description ?? null }));
+    const nameW = Math.max(0, ...types.map((t) => t.name.length));
+    const pluralW = Math.max(0, ...types.map((t) => t.plural.length));
+    this.emit(types.map((t) => `${t.name.padEnd(nameW)}  ${t.plural.padEnd(pluralW)}  ${t.description ?? ""}`.trimEnd()).join("\n"), { types });
     return 0;
   }
 
