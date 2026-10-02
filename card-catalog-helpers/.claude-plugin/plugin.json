@@ -1,0 +1,9 @@
+{
+  "name": "card-catalog-helpers",
+  "version": "0.5.0",
+  "description": "Skills and an agent that use card-catalog in a conversation: set up a collection, fix what validate reports, and find the records a planned change touches.",
+  "author": { "name": "someotherdustin" },
+  "license": "MIT",
+  "keywords": ["adr", "architecture-decision-records", "records", "index", "skills"],
+  "dependencies": [{ "name": "card-catalog", "version": "=0.5.0" }]
+}

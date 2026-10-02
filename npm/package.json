@@ -1,6 +1,6 @@
 {
   "name": "@someotherdustin/card-catalog",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Grep-able indexes of the markdown records that pile up in a repo (ADRs, RFCs, runbooks, postmortems), for agents and operators alike.",
   "type": "module",
   "bin": { "card-catalog": "dist/cli.js" },

@@ -30,6 +30,25 @@ Requires Node ≥ 22.18. The plugin's scripts are TypeScript run directly by
 Node's built-in type stripping, so there's no build step and no runtime
 dependencies.
 
+For help in a conversation, also install the helpers, which bring the
+matching `card-catalog` plugin with them:
+
+```
+/plugin install card-catalog-helpers@card-catalog
+```
+
+- **`add-collection`** (skill) proposes a `card-catalog.json` entry for a
+  directory of records, checks it with `preview`, and writes it once you
+  approve.
+- **`records-doctor`** (skill) walks through what `validate` reports and
+  fixes it with your approval. It never deletes files.
+- **`precedent-finder`** (agent) finds the records a planned change touches
+  or contradicts, and answers with a short list, so your conversation
+  doesn't load the records.
+
+They're a separate plugin so a session that only wants indexing doesn't
+carry their descriptions. See [helpers.md](docs/specs/helpers.md).
+
 Without Claude Code, or in CI, use the CLI from npm. The package is
 `@someotherdustin/card-catalog`, and the command it installs is
 `card-catalog`:
@@ -217,7 +236,14 @@ npm run build:npm  # compile the core and CLI into npm/ for publishing
 ```
 
 The core lives in `card-catalog-plugin/scripts/core/`, with no Claude Code
-dependency. The hooks and `scripts/cli.ts` are thin front-ends over it.
+dependency. The hooks and `scripts/cli.ts` are thin front-ends over it. The
+helpers live in `card-catalog-helpers/`: two skills, an agent, and
+`scripts/find-cli.ts`, which finds a CLI at the pinned version.
+
+The helpers' `claude plugin eval` suite costs API calls, so it isn't part of
+`npm test`. Run it before a release that changes the helpers, by hand or
+from the **Helper evals** workflow, which needs an `ANTHROPIC_API_KEY`
+secret. See [its README](card-catalog-helpers/evals/README.md).
 
 The pre-commit hook runs `lint` and `typecheck` on the whole project and
 rejects the commit if either fails. `git commit --no-verify` skips it, so
@@ -228,8 +254,11 @@ it, add a branch ruleset for `main` that requires the `check (node 22.18)`,
 `check (node 22)` and `check (node 24)` status checks.
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`. It checks that the
-tag, `npm/package.json`, the plugin manifest and the CLI agree on the
-version, compiles, and publishes `npm/` with npm provenance. It
+tag, `npm/package.json`, both plugin manifests, the helpers' pin on
+`card-catalog` and the CLI agree on the version, compiles, and publishes
+`npm/` with npm provenance. Then it tags `card-catalog--v<version>` and
+`card-catalog-helpers--v<version>`, which Claude Code resolves the helpers'
+dependency against. It
 authenticates through npm trusted publishing, so there's no token to keep:
 the package's npm settings name this repo and `release.yml` as its trusted
 publisher.

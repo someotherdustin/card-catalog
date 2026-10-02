@@ -1,0 +1,64 @@
+name: Helper evals
+
+# Runs the card-catalog-helpers eval suite with `claude plugin eval`. Each run
+# costs API calls, so it's started by hand before a release that changes the
+# helpers, never on pull requests. See card-catalog-helpers/evals/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max-cost-usd:
+        description: Stop starting runs once the suite has cost this much
+        default: "15"
+      threshold:
+        description: Fail when any case scores below this (0 to 1)
+        default: "0.6"
+      case:
+        description: Only run cases whose name matches this glob
+        default: "*"
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      # The skills fall back to card-catalog on PATH when the session-start
+      # message gives no CLI path; the run's sandbox has no network for npx.
+      - name: Install this commit's CLI as card-catalog
+        run: npm run build:npm && npm install -g ./npm && card-catalog --version
+      # Claude Code's sandbox for Bash needs bubblewrap and socat on Linux.
+      - run: sudo apt-get update && sudo apt-get install -y bubblewrap socat
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Run the suite
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CASE: ${{ inputs.case }}
+          MAX_COST_USD: ${{ inputs.max-cost-usd }}
+          THRESHOLD: ${{ inputs.threshold }}
+        run: |
+          # The repo root is the target so cases can load both plugins.
+          claude plugin eval . --eval-dir card-catalog-helpers/evals \
+            --case "$CASE" \
+            --scaffold --trust-plugin \
+            --allow-tools Bash Edit Write \
+            --max-cost-usd "$MAX_COST_USD" \
+            --threshold "$THRESHOLD" \
+            --no-publish \
+            --report eval-report.html \
+            --json eval-result.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: helper-evals
+          path: |
+            eval-report.html
+            eval-result.json

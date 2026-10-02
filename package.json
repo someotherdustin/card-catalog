@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "eslint --max-warnings=0 .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test card-catalog-plugin/test/*.test.ts",
+    "test": "node --test card-catalog-plugin/test/*.test.ts card-catalog-helpers/test/*.test.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "reindex": "node card-catalog-plugin/scripts/reindex.ts",
     "build:npm": "rm -rf npm/dist && tsc -p tsconfig.build.json && cp card-catalog-plugin/card-catalog.schema.json README.md npm/",

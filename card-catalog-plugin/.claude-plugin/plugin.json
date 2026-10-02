@@ -1,6 +1,6 @@
 {
   "name": "card-catalog",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Keeps a grep-able INDEX.md next to each collection of markdown records (ADRs by default; RFCs, runbooks, postmortems by config) in sync as records are written, so agents can find prior records without loading them all.",
   "author": { "name": "someotherdustin" },
   "license": "MIT",

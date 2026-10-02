@@ -84,7 +84,8 @@ npx -y @someotherdustin/card-catalog@0.5.0
 
 When no source works, it prints nothing on stdout and exits 1. On stderr it
 names each source tried and why it was rejected (`not given`, `not found`,
-`timed out`, `version 0.4.0, need 0.5.0`), then how to get the CLI:
+`timed out`, `exited with code 1`, `version 0.4.0, need 0.5.0`), then how to
+get the CLI:
 `npm install -g @someotherdustin/card-catalog@<version>`. A skill shows
 that message and stops.
 
@@ -101,7 +102,9 @@ hook (ADR-0001 §6).
 2. **Find the directory and type** from the request. `list --json` shows
    whether the directory is already a collection. If it is, the skill is
    changing that collection's entry, and `profile <dir> --json` shows what
-   it resolves to now and where each value comes from.
+   it resolves to now and where each value comes from. If the directory is
+   ignored, the skill names the ignore source and stops
+   ([ADR-0002](../adr/0002-never-index-ignored-paths.md)).
 3. **Read samples.** 3–5 files that `preview` would read, spread across the
    collection: the first and last in name order, one from the middle, and
    any whose name or shape looks different from the rest.
@@ -238,10 +241,14 @@ Releases before 0.5.0 have only a `v<version>` tag.
 - `find-cli.ts` has `node:test` tests in `card-catalog-helpers/test/`, run
   by `npm test` with the rest of the repo.
 - The skills and the agent have `claude plugin eval` suites in
-  `card-catalog-helpers/evals/`, using fixture repos. They cost API calls,
-  so they run by hand or from a manually started workflow before a release
-  that changes the helpers, with a `--max-cost-usd` limit, never on every
-  pull request. The cases cover at least:
+  `card-catalog-helpers/evals/`, using fixture repos built by each case's
+  scaffold script. They cost API calls, so they run by hand or from a
+  manually started workflow before a release that changes the helpers,
+  with a `--max-cost-usd` limit, never on every pull request. They run with
+  the repo root as the target, so each case can load both plugins and the
+  core's hooks. A run can't ask the person anything, so a skill's approval
+  step ends it: cases check the proposal and that nothing was written,
+  unless the prompt approves a fix in advance. The cases cover at least:
   - `add-collection` choosing the built-in `adr` type for an ADR directory;
   - `add-collection` proposing a custom entry for a postmortems directory;
   - `add-collection` changing an existing collection's entry;

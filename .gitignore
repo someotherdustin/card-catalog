@@ -3,3 +3,4 @@ node_modules/
 npm/dist/
 npm/README.md
 npm/card-catalog.schema.json
+card-catalog-helpers/evals/results/
