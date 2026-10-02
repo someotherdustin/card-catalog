@@ -13,9 +13,10 @@ The npm package `@someotherdustin/card-catalog`, whose command is
 TypeScript directly, with no build step. Node doesn't strip
 types under `node_modules`, so the npm package holds the same core and CLI
 compiled to JavaScript at publish time; compiled output is never committed.
-Pushing a `v*` tag runs a workflow that checks the tag, `package.json` and
-the plugin manifest carry the same version, compiles, and publishes with
-npm provenance. The
+Pushing a `v*` tag runs a workflow that checks the tag, `package.json`,
+both plugin manifests and the helpers' pin carry the same version, compiles,
+publishes with npm provenance, and then tags each plugin
+([helpers.md](helpers.md#releases)). The
 plugin's `scripts/reindex.ts [root]` stays as a shortcut for
 `reindex --root <root>`, because earlier READMEs and session-start messages
 gave it.
@@ -162,6 +163,19 @@ and a collection setting.
 
 A `<dir>` that isn't a collection, without `--type` or `--entry`, exits 1
 with the reason (`not a collection`, or why not, as in `list`).
+
+## `types`
+
+Lists the built-in record types, so a skill or a person can see which ones
+a config entry can name without giving its own profile.
+
+```
+$ card-catalog types
+adr  ADRs  architecture decisions
+```
+
+`--json`: `{ "types": [{ "name", "plural", "description" }] }`, where
+`description` is `null` for a type without one.
 
 ## `validate`
 

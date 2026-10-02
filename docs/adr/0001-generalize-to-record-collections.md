@@ -191,6 +191,26 @@ message gives.
 > package, so the package is `@someotherdustin/card-catalog`. The command
 > it installs is still `card-catalog`.
 
+> **Amended 2026-10-01:** The first helpers are `add-collection`,
+> `records-doctor` and `precedent-finder`. `supersede` and
+> `collection-auditor` wait until real use shows what they need. Finding
+> records whose referenced code has changed needs the core to know which
+> code a record refers to, so it gets its own ADR.
+>
+> Helpers look for the CLI in this order: the path the session-start
+> message gives, `npx` pinned to the helpers' own version, then a
+> `card-catalog` on `PATH` whose version matches. Otherwise they stop and
+> say how to get it. The helpers plugin pins the core plugin (§7), so the
+> session-start path is the matching version and needs no network, which
+> is why it now comes before `npx`. One script in the helpers plugin does
+> the lookup, so no skill restates it.
+>
+> `precedent-finder` has no shell. Claude Code can't limit an agent's Bash
+> to certain commands, so an agent with Bash isn't read-only. Subagents
+> don't see the session-start message either, so whoever starts it passes
+> the index paths, and without them it finds indexes by their header.
+> [docs/specs/helpers.md](../specs/helpers.md) has the details.
+
 ### 5. Indexes have a single writer
 
 Only the core writes index files, through the hooks or `reindex`. Helpers
@@ -220,6 +240,17 @@ Once written, the profile is plain data the hooks apply without a model.
 Someone who only wants automatic indexing doesn't pay the context cost of
 helper descriptions. Helpers that only a person would start set
 `disable-model-invocation: true` so they stay out of the model's list.
+
+> **Amended 2026-10-01:** The helpers plugin pins the core plugin to its
+> exact version. Claude Code resolves plugin dependencies against tags
+> named `<plugin>--v<version>`, so the release workflow, still started by
+> one `v<version>` tag, publishes to npm and then tags
+> `card-catalog--v<version>` and `card-catalog-helpers--v<version>`. A
+> plugin tag never names an npm version that isn't published yet.
+>
+> Agents have no `disable-model-invocation`, so the model can always start
+> them. Both first skills leave it off: people ask for them in plain words,
+> and both ask before writing anything.
 
 ### 8. Index records, never create them
 

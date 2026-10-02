@@ -95,3 +95,12 @@ A coding agent working in the repo, which reads indexes and writes records.
 **Operator**:
 A person working in the repo without an agent, through an editor, the CLI or CI.
 _Avoid_: user, human
+
+### Helpers
+
+**Helper**:
+A skill or subagent, installed as a separate plugin, that uses card-catalog
+in a conversation, such as one that proposes a profile for a new
+collection. A helper agent is a subagent the conversation starts, not the
+**Agent** working in the repo.
+_Avoid_: assistant, tool

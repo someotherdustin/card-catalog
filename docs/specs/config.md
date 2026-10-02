@@ -15,7 +15,7 @@ cache.
 
 ```json
 {
-  "$schema": "<schema URL>",
+  "$schema": "https://unpkg.com/@someotherdustin/card-catalog/card-catalog.schema.json",
   "defaults": true,
   "ignoreFiles": [".internal-ignore"],
   "collections": [
@@ -167,4 +167,7 @@ source strings and ID patterns as string patterns, so editors flag most
 mistakes as they're typed. `validate` checks the same rules and more
 (globs that match nothing, conflicts between entries).
 
-The `$schema` URL is fixed at the first npm release.
+The `$schema` URL is
+`https://unpkg.com/@someotherdustin/card-catalog/card-catalog.schema.json`.
+It always serves the latest published version, so editors check against
+the newest schema rather than the one that wrote the file.
